@@ -1,0 +1,1732 @@
+/* css/ui.css — WP-UI
+   Big bold arcade HUD. Everything is sized in em from one base, 16 px at 1280 x 720, so the whole layout scales with the window.
+   Screens and cards use logical properties, so ?lang=he mirrors them by itself. The four HUD corners stay where GAME_DESIGN 20 puts
+   them in both languages, with right-to-left text inside: the rear-view strip is fixed under the top right corner, and a mirrored
+   money block would sit on it. */
+
+:root {
+  --ink: #15121c;
+  --ink-soft: rgba(21, 18, 28, 0.78);
+  --sun: #ffd21f;
+  --orange: #ff8a1f;
+  --tomato: #ff4630;
+  --sea: #12b5cf;
+  --leaf: #3ddc6e;
+  --paper: #fff6e3;
+  --sand: #f2c98a;
+  --rage: #ff2e63;
+}
+
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: #2c3440;
+}
+
+#game {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+#ui-root {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  overflow: hidden;
+  pointer-events: none;
+  user-select: none;
+  color: #fff;
+  font-family: "Arial Black", "Noto Sans Hebrew", "Noto Sans", Arial, "Liberation Sans", "DejaVu Sans", sans-serif;
+  font-size: min(calc(100vh / 45), calc(100vw / 80));
+  font-weight: 900;
+  line-height: 1.15;
+  --stroke: 0.07em;
+}
+
+#ui-root.rtl {
+  font-family: "Noto Sans Hebrew", Arial, "Liberation Sans", "DejaVu Sans", sans-serif;
+}
+
+.off { display: none !important; }
+
+.no-hud .cards, .no-hud .bubbles { display: none; }
+
+.hud, .cards, .bubbles {
+  position: absolute;
+  inset: 0;
+}
+
+/* The outlined arcade letter. */
+.hud-clock-digits, .hud-money-digits, .hud-speed-digits, .hud-chain-mult, .hud-arrow-dist, .pop, .hud-prompt,
+.title-name, .pause-title, .knife-line, .payout-stamp, .payout-title, .block-title, .resolve-title, .title-start, .end-restart {
+  -webkit-text-stroke: var(--stroke) var(--ink);
+  paint-order: stroke fill;
+  text-shadow: 0.05em 0.07em 0 var(--ink);
+}
+
+kbd.key {
+  display: inline-block;
+  min-width: 1.5em;
+  box-sizing: border-box;
+  margin: 0 0.12em;
+  padding: 0.12em 0.42em;
+  border-radius: 0.3em;
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  font-style: normal;
+  font-size: 0.92em;
+  text-align: center;
+  -webkit-text-stroke: 0;
+  text-shadow: none;
+  box-shadow: 0 0.14em 0 #b7a98a, 0 0.14em 0 0.08em var(--ink), 0 0 0 0.08em var(--ink);
+}
+
+/* Clock */
+.hud-clock {
+  position: absolute;
+  top: 0.45em;
+  left: 50%;
+  transform: translateX(-50%);
+  min-width: 10.5em;
+  text-align: center;
+  transform-origin: 50% 0;
+  transition: transform 0.25s ease-out;
+}
+
+/* The parking view needs the top of the frame, so the clock draws in. tagPinTopParkEm in js/ui/tune.js sits under this size. */
+.hud-clock.parking-view { transform: translateX(-50%) scale(0.72); }
+
+.hud-clock-digits {
+  font-size: 4.3em;
+  line-height: 1;
+  color: var(--sun);
+  font-variant-numeric: tabular-nums;
+  --stroke: 0.1em;
+}
+
+.hud-clock.frozen .hud-clock-digits { color: #bfeaf3; }
+.hud-clock.warn1 .hud-clock-digits { color: var(--orange); animation: clock-pulse 0.8s ease-in-out infinite; }
+.hud-clock.warn2 .hud-clock-digits { color: var(--tomato); animation: clock-pulse 0.5s ease-in-out infinite; }
+
+@keyframes clock-pulse {
+  50% { transform: scale(1.14); }
+}
+
+/* Errand chip, under the clock */
+.hud-chip {
+  position: absolute;
+  top: 4.75em;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 27em;
+  box-sizing: border-box;
+  padding: 0.32em 0.7em 0.42em;
+  border-radius: 0.65em;
+  background: var(--paper);
+  color: var(--ink);
+  border: 0.14em solid var(--ink);
+  box-shadow: 0.16em 0.2em 0 var(--ink);
+  transition: opacity 0.25s ease-out;
+}
+
+.hud-chip.parking-view { opacity: 0; }
+
+.hud-chip-index {
+  font-size: 0.72em;
+  color: #6c5f4a;
+  letter-spacing: 0.03em;
+}
+
+.hud-chip-text {
+  font-size: 0.92em;
+  font-weight: 700;
+  line-height: 1.2;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+/* Route arrow: a solid object tilted over the road */
+.hud-arrow {
+  position: absolute;
+  top: 8.6em;
+  left: 50%;
+  width: 11em;
+  height: 10em;
+  margin-left: -5.5em;
+  perspective: 26em;
+  perspective-origin: 50% 20%;
+}
+
+.hud-arrow-plane {
+  position: absolute;
+  left: 50%;
+  top: 44%;
+  width: 6.2em;
+  height: 9.3em;
+  margin-left: -3.1em;
+  margin-top: -4.65em;
+  transform-style: preserve-3d;
+  transform: rotateX(58deg);
+}
+
+.hud-arrow.scene .hud-arrow-plane { display: none; }
+
+.hud-arrow-layer {
+  position: absolute;
+  inset: 0;
+}
+
+.hud-arrow-layer svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.arrow-shape {
+  fill: #157a3a;
+  stroke: #0f5a2b;
+  stroke-width: 3;
+  stroke-linejoin: round;
+}
+
+.hud-arrow-layer.top .arrow-shape { fill: var(--leaf); stroke: var(--ink); stroke-width: 5; }
+.hud-arrow.wrong .arrow-shape { fill: #b12a1e; stroke: #7c1a11; }
+.hud-arrow.wrong .hud-arrow-layer.top .arrow-shape { fill: var(--tomato); stroke: var(--ink); }
+.hud-arrow.foot .arrow-shape { fill: #0b7f92; stroke: #075a68; }
+.hud-arrow.foot .hud-arrow-layer.top .arrow-shape { fill: var(--sea); stroke: var(--ink); }
+
+.hud-arrow-dist {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -0.2em;
+  text-align: center;
+  font-size: 1.25em;
+  color: #fff;
+}
+
+.hud-arrow.wrong .hud-arrow-dist { color: var(--tomato); }
+
+/* Money and chain */
+.hud-money {
+  position: absolute;
+  top: 0.6em;
+  left: 1em;
+  min-width: 14em;
+  direction: ltr;
+}
+
+.hud-money-digits {
+  font-size: 3em;
+  line-height: 1;
+  color: var(--leaf);
+  --stroke: 0.08em;
+  text-align: start;
+}
+
+.hud-money-digits.loss { color: var(--tomato); }
+
+.hud-chain {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4em;
+  margin-top: 0.3em;
+}
+
+.hud-chain-label {
+  padding: 0.12em 0.45em;
+  font-size: 0.8em;
+  color: var(--ink);
+  background: var(--sun);
+  border: 0.13em solid var(--ink);
+  border-radius: 0.35em;
+}
+
+.hud-chain-mult {
+  display: inline-block;
+  font-size: 2em;
+  color: var(--sun);
+  --stroke: 0.1em;
+}
+
+.hud-chain-mult.bump { animation: chain-bump 0.3s ease-out; }
+
+@keyframes chain-bump {
+  30% { transform: scale(1.5) rotate(-5deg); }
+}
+
+.hud-chain-bank {
+  font-size: 1em;
+  color: #fff;
+  -webkit-text-stroke: 0.08em var(--ink);
+  paint-order: stroke fill;
+}
+
+.hud-chain-bar {
+  width: 12em;
+  height: 0.5em;
+  margin-top: 0.25em;
+  background: var(--ink-soft);
+  border-radius: 0.25em;
+  overflow: hidden;
+}
+
+.hud-chain-fill {
+  height: 100%;
+  background: var(--sun);
+}
+
+/* No-Claims bar */
+.hud-hp {
+  position: absolute;
+  top: 0.75em;
+  right: 1em;
+  width: 18em;
+}
+
+.hud-hp-label {
+  margin-bottom: 0.2em;
+  font-size: 1.05em;
+  text-align: right;
+  -webkit-text-stroke: 0.1em var(--ink);
+  paint-order: stroke fill;
+}
+
+.hud-hp-bar {
+  position: relative;
+  height: 1.7em;
+  background: var(--ink);
+  border: 0.18em solid var(--ink);
+  border-radius: 0.45em;
+  overflow: hidden;
+  box-shadow: 0.14em 0.18em 0 var(--ink);
+}
+
+.hud-hp-fill {
+  height: 100%;
+  border-radius: 0.3em;
+  background: linear-gradient(180deg, #7bf09c, var(--leaf) 45%, #22b153);
+}
+
+.hud-hp-value {
+  position: absolute;
+  inset: 0;
+  text-align: center;
+  line-height: 1.5;
+  -webkit-text-stroke: 0.1em var(--ink);
+  paint-order: stroke fill;
+}
+
+.hud-hp.low .hud-hp-fill { background: linear-gradient(180deg, #ff9a86, var(--tomato)); }
+.hud-hp.flash .hud-hp-bar { animation: bar-flash 0.14s linear infinite; }
+
+@keyframes bar-flash {
+  50% { background: #fff; border-color: var(--tomato); }
+}
+
+.hud-hp-delta {
+  position: absolute;
+  right: 0.2em;
+  top: 2.5em;
+  font-size: 1.5em;
+  color: var(--tomato);
+  -webkit-text-stroke: 0.12em var(--ink);
+  paint-order: stroke fill;
+}
+
+/* Speed */
+.hud-speed {
+  position: absolute;
+  bottom: 0.7em;
+  right: 1.2em;
+  text-align: right;
+}
+
+.hud-speed-digits {
+  font-size: 5em;
+  line-height: 0.95;
+  --stroke: 0.1em;
+  font-variant-numeric: tabular-nums;
+}
+
+.hud-speed-unit {
+  font-size: 1.05em;
+  -webkit-text-stroke: 0.1em var(--ink);
+  paint-order: stroke fill;
+}
+
+/* Street name and minimap */
+.hud-map-stack {
+  position: absolute;
+  bottom: 0.9em;
+  left: 1em;
+  width: 13.5em;
+}
+
+.hud-street {
+  width: fit-content;
+  max-width: 21em;
+  box-sizing: border-box;
+  margin: 0 auto 0.4em 0;
+  padding: 0.18em 0.6em 0.24em;
+  background: #17589c;
+  color: #fff;
+  border: 0.15em solid #fff;
+  outline: 0.13em solid var(--ink);
+  border-radius: 0.3em;
+  font-size: 1.1em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hud-map {
+  width: 13.5em;
+  height: 13.5em;
+  box-sizing: border-box;
+  border: 0.22em solid var(--ink);
+  border-radius: 1em;
+  overflow: hidden;
+  box-shadow: 0.16em 0.2em 0 var(--ink);
+  background: #e8d9b8;
+}
+
+.minimap {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Prompts */
+.hud-prompt {
+  position: absolute;
+  bottom: 4.2em;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 42em;
+  text-align: center;
+  font-size: 1.6em;
+  color: var(--sun);
+  white-space: nowrap;
+  --stroke: 0.1em;
+}
+
+/* The parking view has the car low in the middle and the box beside it, so the prompt and bar stand beside the car, on the side away
+   from the box, next to the minimap or the speed. js/ui/hud.js picks the side. 20em wide, 15em from the middle, in the HUD's own em. */
+.hud-prompt.parking-view {
+  left: calc(50% - 11.5em);
+  bottom: 1.75em;
+  width: 15.4em;
+  font-size: 1.3em;
+  white-space: normal;
+}
+
+.hud-prompt.parking-view.side-right { left: calc(50% + 11.5em); }
+
+/* The box itself on that ground: up into the side column, over the minimap or the speed. */
+.hud-prompt.parking-view.raised {
+  left: 8.1em;
+  bottom: 13.5em;
+  width: 14.6em;
+}
+
+.hud-prompt.parking-view.raised.side-right { left: calc(100% - 8.1em); }
+
+.hud-prompt.tip { color: #fff; }
+.hud-prompt.flash { animation: prompt-flash 0.3s steps(2, jump-none) infinite; color: var(--tomato); }
+
+@keyframes prompt-flash {
+  0% { opacity: 1; }
+  100% { opacity: 0.45; }
+}
+
+.hud-parkbar {
+  position: absolute;
+  bottom: 3.9em;
+  left: 50%;
+  width: 26em;
+  height: 1.35em;
+  transform: translateX(-50%);
+  background: var(--ink);
+  border: 0.18em solid var(--ink);
+  border-radius: 0.5em;
+  overflow: hidden;
+  box-shadow: 0 0 0 0.12em #fff;
+}
+
+.hud-parkbar.parking-view {
+  left: calc(50% - 15em);
+  bottom: 0.45em;
+  width: 18em;
+}
+
+.hud-parkbar.parking-view.side-right { left: calc(50% + 15em); }
+
+.hud-parkbar.parking-view.raised {
+  left: 10.5em;
+  bottom: 15.5em;
+}
+
+.hud-parkbar.parking-view.raised.side-right { left: calc(100% - 10.5em); }
+
+.hud-parkbar-fill {
+  height: 100%;
+  background: linear-gradient(180deg, #ffe574, var(--sun));
+  border-radius: 0.3em;
+}
+
+/* Toasts and pops. Toasts stand on the bottom edge, under the car and the prompt, between the minimap and the speed. */
+.hud-toasts {
+  position: absolute;
+  bottom: 0.45em;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 52em;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25em;
+}
+
+/* In the parking view that edge belongs to the prompt, so they take the side column away from the box: js/ui/hud.js picks it. */
+.hud-toasts.parking-view {
+  top: 9.5em;
+  bottom: auto;
+  left: 1em;
+  transform: none;
+  width: 19em;
+}
+
+.hud-toasts.parking-view.side-right {
+  left: auto;
+  right: 1em;
+}
+
+.toast {
+  max-width: 44em;
+  box-sizing: border-box;
+  padding: 0.2em 0.9em 0.26em;
+  background: var(--ink-soft);
+  border-radius: 0.5em;
+  font-size: 1.05em;
+  font-weight: 700;
+  text-align: center;
+  animation: toast-in 0.16s ease-out;
+}
+
+.toast.warn { background: rgba(190, 90, 10, 0.92); }
+.toast.grave { background: #57121a; font-weight: 900; }
+
+@keyframes toast-in {
+  from { transform: translateY(0.5em) scale(0.96); opacity: 0; }
+}
+
+/* Pops stand to the left of the road, under the mast heads, so they never sit on the car, the arrow or the head being read. */
+.hud-pops {
+  position: absolute;
+  top: 39%;
+  left: 1em;
+  width: 30em;
+  direction: ltr;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15em;
+}
+
+/* The RESOLVE card reaches further left and lower than the band, so while it is up the stack starts under it. */
+.hud-pops.under-card { top: max(39%, 21em); }
+
+.pop {
+  font-size: 2.3em;
+  --stroke: 0.1em;
+  color: #fff;
+  unicode-bidi: plaintext;
+  transform-origin: 0 0;
+  animation: pop-in 1.5s ease-out both;
+}
+
+.pop.near { color: var(--sun); }
+.pop.hair { color: var(--orange); font-size: 2.9em; }
+.pop.bonus { color: var(--sea); font-size: 2em; }
+.pop.cash { color: var(--leaf); font-size: 1.9em; }
+.pop.loss { color: var(--tomato); font-size: 1.9em; }
+
+/* The stack starts at 39% and the mast heads end at 37.5%, so the top row has 1.5% of the height to rise in. A pop swells and tilts
+   down from its top left corner, and 0.2em of the largest, .pop.hair, is 1.3% of the height at any window shape. */
+@keyframes pop-in {
+  0% { transform: scale(0.4) rotate(4deg); opacity: 0; }
+  12% { transform: scale(1.18) rotate(1deg); opacity: 1; }
+  22% { transform: scale(1) rotate(0); }
+  78% { opacity: 1; }
+  100% { transform: translateY(-0.2em); opacity: 0; }
+}
+
+/* Tags over the world */
+.tag {
+  position: absolute;
+  left: 0;
+  top: 0;
+  will-change: transform;
+}
+
+.tag-rage {
+  width: 10em;
+  padding: 0.2em 0.3em 0.3em;
+  background: var(--ink-soft);
+  border-radius: 0.4em;
+  text-align: center;
+}
+
+.tag-rage.pinned {
+  left: auto;
+  top: 13.2em;
+  right: 1em;
+  transform: none;
+}
+
+.tag-rage-label {
+  font-size: 0.8em;
+  color: #ffc2cf;
+}
+
+.tag-rage-bar {
+  position: relative;
+  height: 0.9em;
+  background: #fff;
+  border: 0.12em solid var(--ink);
+  border-radius: 0.3em;
+  overflow: hidden;
+  direction: ltr;
+}
+
+.tag-rage-fill {
+  height: 100%;
+  background: var(--sun);
+}
+
+.tag-rage.warm .tag-rage-fill { background: var(--orange); }
+.tag-rage.hot .tag-rage-fill { background: var(--rage); }
+
+.tag-rage-tick {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 0.14em;
+  background: var(--ink);
+}
+
+.tag-rage-tick.t45 { left: 45%; }
+.tag-rage-tick.t75 { left: 75%; }
+
+.tag-bay {
+  text-align: center;
+}
+
+.tag-bay-pin {
+  position: relative;
+  width: 2em;
+  height: 2em;
+  flex: none;
+  margin: 0 auto 0.5em;
+  border-radius: 0.5em;
+  background: var(--leaf);
+  border: 0.16em solid var(--ink);
+  box-shadow: 0 0 0 0.1em #fff;
+  color: var(--ink);
+  font-size: 1.1em;
+  line-height: 1.85;
+}
+
+.tag-bay-pin::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -0.62em;
+  margin-left: -0.4em;
+  border-left: 0.4em solid transparent;
+  border-right: 0.4em solid transparent;
+  border-top: 0.5em solid var(--ink);
+}
+
+/* Pinned under the top HUD: a caret toward the bay, and the P. */
+.tag-bay.pinned {
+  display: flex;
+  align-items: center;
+  gap: 0.35em;
+}
+
+.tag-bay.pinned .tag-bay-pin { margin: 0; }
+.tag-bay.pinned .tag-bay-pin::after { display: none; }
+
+/* A notched dart: a plain triangle is near enough equilateral that, once rotated, another corner reads as the point. */
+.tag-bay-dir {
+  flex: none;
+  position: relative;
+  width: 1.6em;
+  height: 1.6em;
+  border-radius: 50%;
+  background: var(--ink);
+  box-shadow: 0 0 0 0.13em var(--leaf);
+}
+
+.tag-bay-dir::before {
+  content: '';
+  position: absolute;
+  inset: 0.2em 0.32em;
+  background: var(--leaf);
+  clip-path: polygon(50% 0, 100% 100%, 50% 72%, 0 100%);
+}
+
+.tag-bay-bar {
+  width: 7em;
+  height: 0.7em;
+  background: var(--ink);
+  border: 0.12em solid #fff;
+  border-radius: 0.3em;
+  overflow: hidden;
+}
+
+.tag-bay-fill {
+  height: 100%;
+  background: var(--sun);
+}
+
+.tag-door {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.tag-door-text {
+  padding: 0.1em 0.5em 0.16em;
+  background: var(--orange);
+  color: var(--ink);
+  border: 0.13em solid var(--ink);
+  border-radius: 0.35em;
+  font-size: 0.85em;
+}
+
+.tag-door-icon {
+  order: 2;
+  width: 0;
+  height: 0;
+  border-inline-start: 0.5em solid transparent;
+  border-inline-end: 0.5em solid transparent;
+  border-top: 0.6em solid var(--ink);
+}
+
+/* The runner's next corner. Sea blue, the colour of the chase's own words, so it reads apart from the green arrow at the door. */
+.tag-way {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2em;
+}
+
+.tag-way-dir {
+  width: 3.8em;
+  height: 3.8em;
+  background: var(--sea);
+  clip-path: polygon(50% 0, 100% 56%, 70% 56%, 70% 100%, 30% 100%, 30% 56%, 0 56%);
+  filter: drop-shadow(0 0.12em 0 var(--ink));
+}
+
+.tag-way-text {
+  padding: 0.1em 0.5em 0.16em;
+  background: var(--sea);
+  color: var(--ink);
+  border: 0.13em solid var(--ink);
+  border-radius: 0.35em;
+  font-size: 0.95em;
+  font-weight: 900;
+}
+
+/* Chevrons */
+.hud-chevrons {
+  position: absolute;
+  inset: 0;
+}
+
+.chevron {
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+
+.chevron-mark {
+  position: absolute;
+  width: 3.6em;
+  height: 3.4em;
+  background: var(--sun);
+  clip-path: polygon(50% 0, 100% 62%, 76% 100%, 50% 62%, 24% 100%, 0 62%);
+  animation: chevron-beat 0.4s ease-in-out infinite;
+  filter: drop-shadow(0 0 0 var(--ink));
+}
+
+.chevron-label {
+  position: absolute;
+  top: 1.7em;
+  width: 16em;
+  margin-left: -8em;
+  text-align: center;
+  font-size: 0.95em;
+  color: #fff;
+  -webkit-text-stroke: 0.14em var(--ink);
+  paint-order: stroke fill;
+}
+
+@keyframes chevron-beat {
+  50% { background: var(--tomato); }
+}
+
+/* Full-screen effects */
+.fx-vignette, .fx-flash {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+}
+
+.fx-vignette {
+  background: radial-gradient(ellipse at center, rgba(255, 30, 20, 0) 42%, rgba(255, 30, 20, 0.85) 100%);
+}
+
+.fx-flash { background: #fff; }
+
+/* Bubbles */
+.bubble {
+  position: absolute;
+  left: 0;
+  top: 0;
+  padding: 0.2em 0.6em 0.26em;
+  background: #fff;
+  color: var(--ink);
+  border: 0.16em solid var(--ink);
+  border-radius: 0.9em;
+  font-size: 1.5em;
+  white-space: nowrap;
+  will-change: transform;
+}
+
+.bubble::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -0.5em;
+  margin-left: -0.3em;
+  border-left: 0.3em solid transparent;
+  border-right: 0.3em solid transparent;
+  border-top: 0.5em solid var(--ink);
+}
+
+/* The phone */
+.phone {
+  position: absolute;
+  top: 8.4em;
+  left: 50%;
+  width: 26em;
+  box-sizing: border-box;
+  margin-left: -13em;
+  padding: 0.7em 0.9em 1em;
+  background: #22262e;
+  color: #fff;
+  border: 0.24em solid var(--ink);
+  border-radius: 1.5em;
+  box-shadow: 0 0 0 0.16em #4b5361, 0.4em 0.5em 0 rgba(0, 0, 0, 0.4);
+  transform: rotate(-2deg);
+  animation: phone-in 0.3s cubic-bezier(0.2, 1.4, 0.4, 1);
+}
+
+.rtl .phone { transform: rotate(2deg); }
+
+@keyframes phone-in {
+  from { transform: translateY(-3em) rotate(-8deg) scale(0.85); opacity: 0; }
+}
+
+.phone-bar {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8em;
+  color: #c9d2de;
+}
+
+.phone-new {
+  margin-top: 0.6em;
+  font-size: 0.8em;
+  font-weight: 700;
+  color: var(--leaf);
+}
+
+.phone-bubble {
+  margin-top: 0.3em;
+  padding: 0.6em 0.8em 0.7em;
+  background: #dff7c9;
+  color: var(--ink);
+  border-radius: 0.2em 1em 1em 1em;
+  font-size: 1.45em;
+  font-weight: 700;
+  line-height: 1.22;
+}
+
+.phone-at {
+  margin-top: 0.6em;
+  font-size: 1em;
+  font-weight: 700;
+  color: var(--sun);
+}
+
+.phone-route {
+  margin-top: 0.15em;
+  font-size: 0.82em;
+  font-weight: 700;
+  color: #c9d2de;
+}
+
+/* Payout */
+.payout, .block, .resolve {
+  position: absolute;
+  left: 50%;
+  top: 9em;
+  width: 28em;
+  box-sizing: border-box;
+  margin-left: -14em;
+  padding: 0.8em 1.2em 1.1em;
+  text-align: center;
+  background: var(--paper);
+  color: var(--ink);
+  border: 0.24em solid var(--ink);
+  border-radius: 1em;
+  box-shadow: 0.35em 0.45em 0 var(--ink);
+  animation: card-in 0.22s ease-out;
+}
+
+@keyframes card-in {
+  from { transform: scale(0.7); opacity: 0; }
+}
+
+.payout-title {
+  font-size: 1.5em;
+  color: var(--leaf);
+}
+
+.payout-stamp {
+  margin-top: 0.1em;
+  font-size: 3em;
+  color: var(--sun);
+  --stroke: 0.1em;
+}
+
+.payout-stamp[data-q="PERFECT"] { color: var(--leaf); }
+.payout-stamp[data-q="UGLY"] { color: var(--orange); }
+.payout-stamp[data-q="DOUBLE"] { color: var(--tomato); }
+
+.payout-line {
+  font-size: 1.05em;
+  font-weight: 700;
+}
+
+.payout-why {
+  margin-top: 0.25em;
+  font-size: 0.95em;
+  font-weight: 700;
+  color: #b12a1e;
+}
+
+.payout-rows {
+  display: flex;
+  justify-content: center;
+  gap: 2.4em;
+  margin-top: 0.6em;
+}
+
+.payout-row {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.payout-label {
+  font-size: 0.75em;
+  color: #6c5f4a;
+}
+
+.payout-value {
+  font-size: 2em;
+  color: #15803d;
+}
+
+.payout-note {
+  margin-top: 0.4em;
+  font-size: 0.95em;
+  color: #0b7f92;
+}
+
+.block {
+  background: var(--sun);
+}
+
+.block-title {
+  font-size: 2.6em;
+  color: var(--tomato);
+  --stroke: 0.1em;
+}
+
+.block-line {
+  font-size: 1.15em;
+  font-weight: 700;
+}
+
+.block-time {
+  margin-top: 0.2em;
+  font-size: 1.9em;
+}
+
+.resolve {
+  top: 8em;
+  width: 32em;
+  margin-left: -16em;
+}
+
+.resolve-title {
+  font-size: 2em;
+  color: var(--sun);
+  --stroke: 0.1em;
+}
+
+.resolve-line {
+  margin-top: 0.3em;
+  font-size: 1.2em;
+  font-weight: 700;
+}
+
+.resolve-pay {
+  margin-top: 0.3em;
+  font-size: 2.2em;
+  color: #15803d;
+}
+
+.resolve-skip {
+  margin-top: 0.3em;
+  font-size: 0.85em;
+  color: #6c5f4a;
+}
+
+/* Knife stage prompts */
+.knife {
+  position: absolute;
+  left: 50%;
+  top: 8.4em;
+  width: 76em;
+  margin-left: -38em;
+  text-align: center;
+}
+
+.knife-line {
+  font-size: 3em;
+  color: #fff;
+  --stroke: 0.1em;
+  white-space: nowrap;
+}
+
+.knife.big .knife-line {
+  font-size: 3.2em;
+  color: var(--sun);
+  animation: knife-beat 0.42s ease-in-out infinite;
+}
+
+.knife.chase-line { top: 12.2em; }
+.knife.chase-line .knife-line { font-size: 1.7em; color: var(--sea); }
+.knife.lunge .knife-line { font-size: 4em; color: var(--tomato); animation: knife-beat 0.2s ease-in-out infinite; }
+
+@keyframes knife-beat {
+  50% { transform: scale(1.07); }
+}
+
+.knife-tug {
+  width: 30em;
+  height: 1.6em;
+  margin: 0.6em auto 0;
+  background: var(--ink);
+  border: 0.2em solid var(--ink);
+  border-radius: 0.55em;
+  overflow: hidden;
+  box-shadow: 0 0 0 0.14em #fff;
+}
+
+.knife-tug-fill {
+  height: 100%;
+  background: linear-gradient(180deg, #ff9a86, var(--tomato));
+  border-radius: 0.3em;
+}
+
+.chase {
+  position: absolute;
+  top: 5.1em;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 1.8em;
+  padding: 0.3em 1.2em 0.4em;
+  background: var(--ink-soft);
+  border-radius: 0.7em;
+}
+
+.chase-cell { text-align: center; min-width: 5.5em; }
+
+.chase-label {
+  font-size: 0.72em;
+  color: #c9d2de;
+}
+
+.chase-value {
+  font-size: 1.5em;
+}
+
+.chase-pips {
+  display: flex;
+  justify-content: center;
+  gap: 0.35em;
+  margin-top: 0.18em;
+}
+
+.pip {
+  width: 1.05em;
+  height: 1.05em;
+  border-radius: 50%;
+  background: #4b5361;
+  border: 0.13em solid #fff;
+}
+
+.pip.on { background: var(--tomato); }
+
+/* Screens */
+.scr {
+  position: absolute;
+  inset: 0;
+  pointer-events: auto;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+.osm {
+  font-size: 0.8em;
+  font-weight: 700;
+  color: #fff;
+}
+
+.controls-line {
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: center;
+  gap: 0.75em;
+  font-size: 0.72em;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.controls-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15em;
+}
+
+.controls-cell kbd.key {
+  min-width: 1.3em;
+  padding: 0.04em 0.28em;
+  box-shadow: 0 0.1em 0 #b7a98a, 0 0 0 0.07em var(--ink);
+}
+
+.controls-label { margin-inline-start: 0.2em; }
+
+/* Title */
+.scr-title {
+  background: linear-gradient(180deg, #ffb347 0%, #ff8a4a 38%, #f26a5a 60%, #1f8fb5 60.3%, #127a9e 100%);
+  overflow: hidden;
+}
+
+.title-sun {
+  position: absolute;
+  top: 16%;
+  inset-inline-end: 10%;
+  width: 17em;
+  height: 17em;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff3b0 0%, var(--sun) 60%, #ffc01f 100%);
+  box-shadow: 0 0 0 1.1em rgba(255, 224, 110, 0.35);
+}
+
+.title-head {
+  position: absolute;
+  top: 1em;
+  inset-inline-start: 2.6em;
+}
+
+.title-name {
+  font-size: 7.4em;
+  line-height: 0.95;
+  color: var(--sun);
+  --stroke: 0.09em;
+  transform: skewX(-7deg);
+  transform-origin: 0 100%;
+  text-shadow: 0.05em 0.06em 0 var(--tomato), 0.09em 0.11em 0 var(--ink);
+}
+
+.rtl .title-name {
+  transform: none;
+}
+
+.title-sub {
+  margin-top: 0.15em;
+  font-size: 1.9em;
+  color: #fff;
+  -webkit-text-stroke: 0.09em var(--ink);
+  paint-order: stroke fill;
+}
+
+.title-tag {
+  margin-top: 0.5em;
+  font-size: 1.25em;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.title-gan {
+  margin-top: 0.2em;
+  font-size: 1.05em;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.title-pick {
+  position: absolute;
+  top: 16.6em;
+  left: 50%;
+  width: 66em;
+  margin-left: -33em;
+  text-align: center;
+}
+
+.title-pick-head {
+  font-size: 1.15em;
+  color: var(--ink);
+}
+
+.diff-row {
+  display: flex;
+  justify-content: center;
+  gap: 1.5em;
+  margin-top: 0.5em;
+}
+
+.diff {
+  width: 31em;
+  box-sizing: border-box;
+  padding: 0.6em 0.8em 0.75em;
+  background: #e6d8c0;
+  color: #5a5047;
+  border: 0.22em solid var(--ink);
+  border-radius: 0.9em;
+}
+
+.diff.on {
+  background: var(--paper);
+  color: var(--ink);
+  transform: translateY(-0.2em) scale(1.03);
+  box-shadow: 0 0 0 0.2em var(--sun), 0.3em 0.45em 0 var(--ink);
+}
+
+.diff-name {
+  font-size: 2.1em;
+}
+
+.diff.on .diff-name { color: #d7371f; }
+
+.diff-line {
+  margin-top: 0.15em;
+  font-size: 0.98em;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.title-pick-keys {
+  margin-top: 0.7em;
+  font-size: 0.85em;
+  font-weight: 700;
+  color: #fff;
+}
+
+.title-start {
+  position: absolute;
+  bottom: 3.9em;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 1.9em;
+  color: var(--sun);
+  --stroke: 0.1em;
+  animation: start-beat 1.1s ease-in-out infinite;
+}
+
+@keyframes start-beat {
+  50% { transform: scale(1.05); }
+}
+
+/* Sized from the viewport, not the em: on a phone the em is about 5 px, and this is the one line that person has to read. */
+.title-touch {
+  position: absolute;
+  top: 50%;
+  left: 5%;
+  right: 5%;
+  transform: translateY(-50%);
+  padding: 0.7em 0.9em;
+  box-sizing: border-box;
+  text-align: center;
+  font-size: clamp(16px, 5.4vmin, 34px);
+  font-weight: 900;
+  line-height: 1.3;
+  color: var(--ink);
+  background: var(--sun);
+  border: 0.14em solid var(--ink);
+  border-radius: 0.5em;
+  box-shadow: 0 0.2em 0 var(--ink);
+}
+
+.scr-title .controls-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 3.3em;
+  font-size: 0.8em;
+}
+
+.title-foot {
+  position: absolute;
+  left: 2em;
+  right: 2em;
+  bottom: 0.7em;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 2em;
+}
+
+.title-best { font-size: 0.95em; font-weight: 700; }
+
+.lang-btn {
+  font-size: 0.9em;
+  font-weight: 700;
+  color: #fff;
+}
+
+/* Pause */
+.scr-pause {
+  background: rgba(21, 18, 28, 0.62);
+}
+
+.pause-panel {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 56em;
+  text-align: center;
+}
+
+.pause-title {
+  font-size: 5em;
+  color: var(--sun);
+  --stroke: 0.1em;
+}
+
+.pause-line {
+  font-size: 1.4em;
+  font-weight: 700;
+}
+
+.pause-resume {
+  display: block;
+  margin: 1.1em auto 0;
+  font-size: 1.4em;
+  color: #fff;
+}
+
+.pause-mute {
+  display: block;
+  margin: 0.8em auto 1.5em;
+  font-size: 1em;
+  font-weight: 700;
+  color: #fff;
+}
+
+.pause-credits {
+  display: block;
+  margin: -0.9em auto 1.5em;
+  font-size: 1em;
+  font-weight: 700;
+  color: #fff;
+}
+
+.scr-pause .osm { margin-top: 1.1em; }
+
+/* The picture dropped out. Over everything, opaque, since behind it is a blank canvas or the last frame. */
+.scr-lost {
+  background: var(--ink);
+  z-index: 40;
+}
+
+.lost-panel {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 56em;
+  max-width: 92%;
+  text-align: center;
+}
+
+.lost-title {
+  font-size: 3.4em;
+  font-weight: 900;
+  color: var(--sun);
+}
+
+.lost-line {
+  margin-top: 0.5em;
+  font-size: 1.4em;
+  font-weight: 700;
+  color: #fff;
+}
+
+.lost-reload {
+  display: block;
+  margin: 1.1em auto 0;
+  padding: 0.3em 1em;
+  font-size: 1.4em;
+  font-weight: 900;
+  color: var(--ink);
+  background: var(--sun);
+  border: 0.12em solid #fff;
+  border-radius: 0.4em;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+/* Credits, over the title or the pause screen */
+.scr-credits {
+  background: rgba(21, 18, 28, 0.97);
+}
+
+.credits-panel {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 52em;
+  max-width: calc(100% - 4em);
+  max-height: calc(100% - 4em);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.8em;
+  text-align: center;
+}
+
+.credits-title {
+  font-size: 3em;
+  color: var(--sun);
+  --stroke: 0.1em;
+}
+
+.credits-body {
+  align-self: stretch;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.credits-head {
+  margin-top: 0.7em;
+  font-size: 1.1em;
+  font-weight: 700;
+  color: var(--sun);
+}
+
+.credits-line {
+  font-size: 1em;
+  font-weight: 700;
+  color: #fff;
+  overflow-wrap: anywhere;
+}
+
+.credits-back {
+  flex: none;
+  font-size: 1.2em;
+  color: #fff;
+}
+
+/* End screens: a licence */
+.scr-end {
+  background: rgba(21, 18, 28, 0.74);
+}
+
+.scr-end.win { background: rgba(255, 190, 70, 0.55); }
+
+.licence {
+  position: absolute;
+  top: 5.2%;
+  left: 50%;
+  width: 45em;
+  box-sizing: border-box;
+  margin-left: -22.5em;
+  padding: 0 0 0.9em;
+  background: linear-gradient(135deg, #fff0d6, #ffe0ea 60%, #ddeeff);
+  color: var(--ink);
+  border: 0.24em solid var(--ink);
+  border-radius: 1.2em;
+  overflow: hidden;
+  box-shadow: 0.5em 0.6em 0 var(--ink);
+  transform: rotate(-1deg);
+  animation: card-in 0.25s ease-out;
+}
+
+.rtl .licence { transform: rotate(1deg); }
+
+.licence-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 0.4em 1.2em 0.5em;
+  background: #17589c;
+  color: #fff;
+}
+
+.licence-word { font-size: 1.3em; letter-spacing: 0.04em; }
+.licence-class { font-size: 0.9em; font-weight: 700; }
+
+.licence-body {
+  display: flex;
+  gap: 1.2em;
+  padding: 0.9em 1.3em 0.2em;
+}
+
+.licence-photo {
+  flex: none;
+  width: 10.5em;
+  height: 12.2em;
+  box-sizing: border-box;
+  padding: 0.6em;
+  display: flex;
+  align-items: center;
+  background: #cfe7ef;
+  border: 0.16em solid var(--ink);
+  border-radius: 0.5em;
+}
+
+.licence-photo svg { width: 100%; }
+
+.licence-info { flex: 1; min-width: 0; }
+
+.licence-title {
+  font-size: 2.4em;
+  line-height: 1.02;
+  color: #b12a1e;
+}
+
+.licence-line {
+  margin-top: 0.3em;
+  font-size: 1.16em;
+  font-weight: 700;
+  line-height: 1.22;
+}
+
+.licence-rank {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6em;
+  margin-top: 0.42em;
+}
+
+.licence-rank-label {
+  font-size: 0.78em;
+  color: #6c5f4a;
+  min-width: 4.6em;
+}
+
+.licence-rank-value {
+  font-size: 1.3em;
+  color: #17589c;
+}
+
+.licence-total {
+  font-size: 1.9em;
+  color: #15803d;
+}
+
+/* Darker than --tomato, which reads under 3:1 on this card. This reads at least 4.9:1 on every colour of its gradient. */
+/* A day with a person hit: a sum, not a score. */
+.licence-total.plain { color: var(--ink); }
+.licence-total.loss { color: #c0200f; }
+
+.licence-best {
+  margin-top: 0.15em;
+  font-size: 0.85em;
+  font-weight: 700;
+  color: #6c5f4a;
+}
+
+.licence-tally {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5em;
+  margin: 0.5em 1.3em 0;
+  padding-top: 0.45em;
+  border-top: 0.12em dashed #6c5f4a;
+}
+
+.tally {
+  flex: 1;
+  text-align: center;
+}
+
+.tally-value {
+  display: block;
+  font-size: 1.5em;
+}
+
+.tally-label {
+  font-size: 0.72em;
+  font-weight: 700;
+  color: #6c5f4a;
+}
+
+.licence-stamp {
+  position: absolute;
+  top: 9.4em;
+  inset-inline-end: 1em;
+  padding: 0.12em 0.5em;
+  border: 0.14em solid rgba(190, 30, 20, 0.6);
+  border-radius: 0.3em;
+  color: rgba(190, 30, 20, 0.6);
+  font-size: 1.1em;
+  transform: rotate(-11deg);
+}
+
+.licence-stamp.good {
+  border-color: rgba(20, 130, 60, 0.65);
+  color: rgba(20, 130, 60, 0.65);
+}
+
+.licence.straight {
+  background: #f2f0ec;
+  transform: none;
+}
+
+.licence.straight .licence-title { color: var(--ink); }
+
+.end-restart {
+  position: absolute;
+  bottom: 3.3em;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 1.5em;
+  color: var(--sun);
+  --stroke: 0.1em;
+}
+
+.end-next {
+  position: absolute;
+  bottom: 1.2em;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  gap: 0.6em;
+  font-size: 1em;
+  font-weight: 700;
+}
+
+.end-next-value {
+  color: var(--sun);
+  font-weight: 900;
+}
+
+/* Debug */
+.debug-panel, .dev-panel {
+  position: absolute;
+  margin: 0;
+  padding: 8px 10px;
+  background: rgba(0, 0, 0, 0.7);
+  color: #9dffb4;
+  font: 12px/1.35 "DejaVu Sans Mono", Menlo, Consolas, monospace;
+  white-space: pre-wrap;
+  max-width: 620px;
+}
+
+.debug-panel { top: 96px; left: 12px; }
+.dev-panel { top: 96px; right: 12px; color: #ffdd9d; max-height: 60%; overflow: auto; }
+
+/* Errors */
+.ui-error {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  pointer-events: auto;
+  background: rgba(21, 18, 28, 0.94);
+  color: #fff;
+}
+
+.ui-error-head {
+  display: flex;
+  justify-content: flex-end;
+  padding: 8px 12px 0;
+}
+
+.ui-error-close {
+  width: 34px;
+  height: 34px;
+  color: #fff;
+  background: #57121a;
+  border-radius: 8px;
+  font: 900 20px/1 Arial, sans-serif;
+}
+
+.ui-error-plain {
+  margin: auto;
+  padding: 0 24px;
+  max-width: 44em;
+  font: 700 22px/1.5 Arial, sans-serif;
+  text-align: center;
+}
+
+.ui-error-plain p { margin: 0 0 1em; }
+
+/* With no graphics the machine is the cause, and the words above say so. The technical line stays in the page for whoever debugs it. */
+.ui-error.no-graphics .ui-error-body { display: none; }
+
+.ui-error-body {
+  flex: 1;
+  margin: 0;
+  padding: 8px 18px 18px;
+  overflow: auto;
+  font: 14px/1.5 "DejaVu Sans Mono", Menlo, Consolas, monospace;
+  white-space: pre-wrap;
+  direction: ltr;
+  text-align: left;
+}

@@ -1,0 +1,7 @@
+{
+  "id": "tlv_center",
+  "bbox": [32.05, 34.755, 32.10, 34.80],
+  "origin": [32.075, 34.7775],
+  "title": { "he": "תל אביב מרכז", "en": "Tel Aviv Center" },
+  "sources": ["tlv_center"]
+}

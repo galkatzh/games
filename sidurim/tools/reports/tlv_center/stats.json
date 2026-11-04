@@ -1,0 +1,687 @@
+{
+  "area": "tlv_center",
+  "osmTime": "2026-11-01T00:38:42Z",
+  "overlayHash": "eb11cce881043882",
+  "source": {
+    "elements": 141313,
+    "duplicates": 3011,
+    "taggedKept": 3011,
+    "nodes": 114284,
+    "ways": 23981,
+    "relations": 37
+  },
+  "roads": {
+    "kept": 3821,
+    "dropped": {
+      "class": 3558,
+      "motorway": 127,
+      "access": 213,
+      "service": 276,
+      "tunnel": 74,
+      "garageRamp": 9
+    },
+    "outside": 0,
+    "portals": 159
+  },
+  "grade": {
+    "crossings": 32,
+    "joined": 19,
+    "removedKm": 0.095,
+    "sites": [
+      {
+        "cut": 1183058449,
+        "name": "Ussishkin",
+        "kept": 30132409,
+        "keptName": "Ibn Gabirol",
+        "x": 602,
+        "y": 2287
+      },
+      {
+        "cut": 505866858,
+        "name": "",
+        "kept": 693469124,
+        "keptName": "",
+        "x": 1545,
+        "y": -997
+      },
+      {
+        "cut": 505866861,
+        "name": "",
+        "kept": 693469124,
+        "keptName": "",
+        "x": 1590,
+        "y": -1033
+      },
+      {
+        "cut": 1170872528,
+        "name": "",
+        "kept": 693469124,
+        "keptName": "",
+        "x": 1564,
+        "y": -1012
+      }
+    ]
+  },
+  "graph": {
+    "junctions": 3623,
+    "kinds": [
+      449,
+      2591,
+      481,
+      102
+    ],
+    "portals": 136,
+    "deadEnds": 673,
+    "multiNode": 420,
+    "largestCluster": 10,
+    "edges": 5198,
+    "shortEdges": 0,
+    "contracted": 140,
+    "stubsRemoved": 32,
+    "garageStubsRemoved": 18,
+    "internalEdges": 900,
+    "internalLongest": 46,
+    "overlayChains": 0,
+    "roundaboutRadii": [
+      136.9,
+      11,
+      10.4,
+      3.5,
+      10,
+      11.6,
+      8.2,
+      12.7,
+      11.3,
+      12.5,
+      11,
+      9.5,
+      12.1,
+      13.7,
+      13.9,
+      11.2,
+      8.4,
+      9.2,
+      7.3,
+      10.2,
+      8,
+      17.1,
+      29.2,
+      19.5,
+      17.9
+    ],
+    "roundaboutsKept": 23,
+    "movements": 10667,
+    "movementsUnreachable": 339,
+    "movementsBanned": 3217,
+    "mandatoryUturns": 539,
+    "signals": {
+      "clusters": 422,
+      "midBlock": 59,
+      "absorbed": 84,
+      "total": 481,
+      "nodesAfterDedupe": 728,
+      "nodesOnKeptRoads": 693
+    },
+    "scc": {
+      "laneKm": 603.2,
+      "sccLaneKm": 569.6,
+      "components": 393
+    }
+  },
+  "section": {
+    "resolvedAtStep": [
+      1839,
+      2369,
+      342,
+      372,
+      34,
+      242
+    ],
+    "centrelineWays": 10,
+    "centrelineBuildings": 10,
+    "laneWays": 36,
+    "laneBuildings": 46,
+    "noCollider": 97,
+    "roofs": 41,
+    "neighbours": {
+      "given": 30,
+      "left": 0
+    },
+    "overlayLanesReduced": [],
+    "separated": {
+      "nodes": 442,
+      "maxM": 3
+    },
+    "largestNoCollider": [
+      {
+        "osm": "w765979741",
+        "m2": 4299,
+        "name": "",
+        "by": [
+          "w31918840",
+          "w106467247"
+        ]
+      },
+      {
+        "osm": "w238249611",
+        "m2": 964,
+        "name": "",
+        "by": [
+          "w143905199"
+        ]
+      },
+      {
+        "osm": "w1029321304",
+        "m2": 911,
+        "name": "Alpha Tower",
+        "by": [
+          "w968944685"
+        ]
+      },
+      {
+        "osm": "w362314997",
+        "m2": 889,
+        "name": "Gymnasium Tower",
+        "by": [
+          "w620976725"
+        ]
+      },
+      {
+        "osm": "w491874298",
+        "m2": 848,
+        "name": "",
+        "by": [
+          "w204135831"
+        ]
+      },
+      {
+        "osm": "w243848127",
+        "m2": 788,
+        "name": "",
+        "by": [
+          "w1336472949"
+        ]
+      },
+      {
+        "osm": "w87699873",
+        "m2": 781,
+        "name": "Crowne Plaza Hotel",
+        "by": [
+          "w204135833"
+        ]
+      },
+      {
+        "osm": "w693008075",
+        "m2": 671,
+        "name": "",
+        "by": [
+          "w31918840",
+          "w106467247"
+        ]
+      },
+      {
+        "osm": "w149368786",
+        "m2": 496,
+        "name": "",
+        "by": [
+          "w924725384"
+        ]
+      },
+      {
+        "osm": "w292305426",
+        "m2": 495,
+        "name": "",
+        "by": [
+          "w54277831"
+        ]
+      },
+      {
+        "osm": "w204436102",
+        "m2": 471,
+        "name": "",
+        "by": [
+          "w617605576"
+        ]
+      },
+      {
+        "osm": "w96641455",
+        "m2": 461,
+        "name": "",
+        "by": [
+          "w759389186"
+        ]
+      },
+      {
+        "osm": "w1185404246",
+        "m2": 453,
+        "name": "",
+        "by": [
+          "w151717168"
+        ]
+      },
+      {
+        "osm": "w226434050",
+        "m2": 448,
+        "name": "",
+        "by": [
+          "w805650839"
+        ]
+      },
+      {
+        "osm": "w200835175",
+        "m2": 431,
+        "name": "",
+        "by": [
+          "w370265704"
+        ]
+      },
+      {
+        "osm": "w218135681",
+        "m2": 420,
+        "name": "",
+        "by": [
+          "w124271755"
+        ]
+      },
+      {
+        "osm": "r15311025",
+        "m2": 350,
+        "name": "Dizengoff Center",
+        "by": [
+          "w289596332",
+          "w1113400111"
+        ]
+      },
+      {
+        "osm": "w515511074",
+        "m2": 325,
+        "name": "",
+        "by": [
+          "w37757536"
+        ]
+      },
+      {
+        "osm": "w292305424",
+        "m2": 304,
+        "name": "",
+        "by": [
+          "w54277829"
+        ]
+      },
+      {
+        "osm": "w149225799",
+        "m2": 303,
+        "name": "",
+        "by": [
+          "w1076976646"
+        ]
+      },
+      {
+        "osm": "r15311025",
+        "m2": 288,
+        "name": "Dizengoff Center",
+        "by": [
+          "w289596332",
+          "w1113400111"
+        ]
+      },
+      {
+        "osm": "w210211806",
+        "m2": 287,
+        "name": "",
+        "by": [
+          "w43513851"
+        ]
+      },
+      {
+        "osm": "w203949320",
+        "m2": 279,
+        "name": "",
+        "by": [
+          "w247768419"
+        ]
+      },
+      {
+        "osm": "w149367089",
+        "m2": 270,
+        "name": "",
+        "by": [
+          "w924725383"
+        ]
+      },
+      {
+        "osm": "w243848217",
+        "m2": 268,
+        "name": "",
+        "by": [
+          "w1336472949"
+        ]
+      }
+    ]
+  },
+  "buildings": {
+    "count": 14552,
+    "fronts": 28528,
+    "relationBuildings": 36,
+    "relationOpen": 0,
+    "multiOuter": 8,
+    "undergroundDropped": 0,
+    "dropped": 4,
+    "verticesRaw": 74644
+  },
+  "crossings": {
+    "count": 1827,
+    "onEdge": 1715,
+    "snapped": 144,
+    "dropped": 35
+  },
+  "stops": {
+    "count": 498,
+    "unplaced": 32
+  },
+  "kerbs": {
+    "rows": 30923
+  },
+  "pois": {
+    "count": 2768,
+    "host": 2663,
+    "facade": 2466,
+    "noHost": 23,
+    "noWall": 196,
+    "interior": 50,
+    "overflowWalls": 14,
+    "addrKnown": 1026,
+    "addrMatched": 886,
+    "nearestNotFaced": 325
+  },
+  "land": {
+    "count": 788,
+    "sea": 1,
+    "construction": 229,
+    "constructionTouchingRoad": 214,
+    "lots": 253,
+    "paths": 336,
+    "trees": 278
+  },
+  "walls": {
+    "count": 53,
+    "fenceKm": 10.802461220383568,
+    "fenceCuts": 38,
+    "fenceKeptKm": 10.107208971100322,
+    "crossedEdges": 23
+  },
+  "file": {
+    "bytes": 1407667,
+    "tables": {
+      "strings": 115782,
+      "juncs": 24330,
+      "edges": 123707,
+      "pts": 79560,
+      "moves": 56821,
+      "blds": 137796,
+      "brings": 19489,
+      "bpts": 398126,
+      "pois": 90569,
+      "kerbs": 285689,
+      "xings": 18300,
+      "stops": 7278,
+      "trees": 1298,
+      "lots": 2443,
+      "lotPts": 7443,
+      "land": 2159,
+      "landPts": 27839,
+      "paths": 1660,
+      "pathPts": 5343,
+      "walls": 131,
+      "wallPts": 1310
+    }
+  },
+  "gates": [
+    {
+      "name": "Map structure problems",
+      "value": 0,
+      "want": "0",
+      "enforced": true,
+      "pass": true
+    },
+    {
+      "name": "Unique nodes after dedupe",
+      "value": 114284,
+      "want": "114,284",
+      "enforced": true,
+      "pass": true
+    },
+    {
+      "name": "Signal nodes retained",
+      "value": 728,
+      "want": ">= 700",
+      "enforced": true,
+      "pass": true
+    },
+    {
+      "name": "SIGNAL junctions",
+      "value": 481,
+      "want": "300 to 520",
+      "enforced": true,
+      "pass": true
+    },
+    {
+      "name": "Junction clusters with degree 3 or more",
+      "value": 2440,
+      "want": "2,000 to 2,700",
+      "enforced": true,
+      "pass": true
+    },
+    {
+      "name": "Movements",
+      "value": 10667,
+      "want": ">= 9,000",
+      "enforced": true,
+      "pass": true
+    },
+    {
+      "name": "Turn-level SCC share of lane-km",
+      "value": 0.9443,
+      "want": ">= 0.90",
+      "enforced": true,
+      "pass": true
+    },
+    {
+      "name": "Same-plane crossings with no junction",
+      "value": 0,
+      "want": "0",
+      "enforced": true,
+      "pass": true
+    },
+    {
+      "name": "Lane centrelines crossing a walls row",
+      "value": 0,
+      "want": "0",
+      "enforced": true,
+      "pass": true
+    },
+    {
+      "name": "Lane centrelines crossing a collider building",
+      "value": 0,
+      "want": "0",
+      "enforced": true,
+      "pass": true
+    },
+    {
+      "name": "Buildings",
+      "value": 14552,
+      "want": ">= 14,000",
+      "enforced": true,
+      "pass": true
+    },
+    {
+      "name": "Named POI facade yield",
+      "value": 0.9213,
+      "want": ">= 0.90",
+      "enforced": true,
+      "pass": true
+    },
+    {
+      "name": "POIs whose edge is not nearest their door",
+      "value": 0,
+      "want": "0",
+      "enforced": true,
+      "pass": true
+    },
+    {
+      "name": "Facade doors inside a collider building",
+      "value": 0,
+      "want": "0",
+      "enforced": true,
+      "pass": true
+    },
+    {
+      "name": "Road crossings with fence inside their gap",
+      "value": 0,
+      "want": "0",
+      "enforced": true,
+      "pass": true
+    },
+    {
+      "name": "Sensitive POIs",
+      "value": 189,
+      "want": ">= 150",
+      "enforced": true,
+      "pass": true
+    },
+    {
+      "name": "Sensitive POIs with amenity=kindergarten",
+      "value": 16,
+      "want": ">= 14",
+      "enforced": true,
+      "pass": true
+    },
+    {
+      "name": "Kerb stalls at 6.5 m",
+      "value": 50215,
+      "want": ">= 50,000",
+      "enforced": true,
+      "pass": true
+    },
+    {
+      "name": "osm column round-trip, max id",
+      "value": 14333244588,
+      "want": "14333244588",
+      "enforced": true,
+      "pass": true
+    },
+    {
+      "name": "map.js bytes",
+      "value": 1407667,
+      "want": "<= 1600000",
+      "enforced": true,
+      "pass": true
+    },
+    {
+      "name": "Lane overlaps between carriageways, outside the allowlist",
+      "value": 0,
+      "want": "0",
+      "enforced": true,
+      "pass": true
+    },
+    {
+      "name": "Long clusters on narrow streets",
+      "value": 0,
+      "want": "0",
+      "enforced": true,
+      "pass": true
+    },
+    {
+      "name": "Kept roundabouts with their arcs on the map",
+      "value": 23,
+      "want": "23",
+      "enforced": true,
+      "pass": true
+    },
+    {
+      "name": "Street names that are only digits",
+      "value": 0,
+      "want": "0",
+      "enforced": true,
+      "pass": true
+    },
+    {
+      "name": "Lanes closer than a car on the built World, outside the allowlist",
+      "value": 0,
+      "want": "0",
+      "enforced": true,
+      "pass": true
+    },
+    {
+      "name": "Dead ends on class 2 or better",
+      "value": 0,
+      "want": "0",
+      "enforced": true,
+      "pass": true
+    },
+    {
+      "name": "Buildings over 1000 m2 with no collider, outside the exceptions",
+      "value": 0,
+      "want": "0",
+      "enforced": true,
+      "pass": true
+    }
+  ],
+  "verifyDetail": {
+    "structure": [],
+    "wallHits": [],
+    "buildingHits": [],
+    "poiEdgeMisses": [],
+    "buriedDoors": [],
+    "gapFences": [],
+    "overlaps": [],
+    "contacts": [
+      {
+        "ways": [
+          482733919,
+          1183058443
+        ],
+        "name": "Bnei Dan",
+        "m": 4,
+        "min": 0.78,
+        "x": 1545,
+        "y": 2455,
+        "allowed": true
+      },
+      {
+        "ways": [
+          762625688,
+          904582103
+        ],
+        "name": "HaRakevet",
+        "m": 1,
+        "min": 1.7,
+        "x": 637,
+        "y": -1752,
+        "allowed": true
+      }
+    ],
+    "deadEnds": [],
+    "hollow": [],
+    "longClusters": [],
+    "network": {
+      "laneKm": 603.1685381596012,
+      "sccKm": 569.5676206862812,
+      "share": 0.9442926556218536,
+      "signals": 481,
+      "clusters": 2440,
+      "noExit": 40
+    },
+    "pois": {
+      "named": 2350,
+      "withFacade": 2165,
+      "yield": 0.9212765957446809,
+      "sensitive": 189,
+      "kindergarten": 16
+    },
+    "spots": {
+      "stalls": 50215,
+      "rejected": 5
+    }
+  }
+}

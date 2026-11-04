@@ -1,0 +1,527 @@
+[
+ {
+  "op": "road.set",
+  "anchor": {
+   "osm": "w31918840"
+  },
+  "set": {
+   "tunnel": null,
+   "covered": null,
+   "layer": null,
+   "tlv:at_grade": "yes"
+  },
+  "why": "Eliezer Peri under Atarim Square, northbound. The world is flat, so the underpass runs at grade or the road dead-ends at both portals"
+ },
+ {
+  "op": "road.set",
+  "anchor": {
+   "osm": "w106467247"
+  },
+  "set": {
+   "tunnel": null,
+   "covered": null,
+   "layer": null,
+   "tlv:at_grade": "yes"
+  },
+  "why": "Eliezer Peri under Atarim Square, southbound. See northbound"
+ },
+ {
+  "op": "road.set",
+  "anchor": {
+   "osm": "w30741698"
+  },
+  "set": {
+   "tunnel": null,
+   "covered": null,
+   "layer": null,
+   "tlv:at_grade": "yes"
+  },
+  "why": "Menachem Begin under Kaplan, northbound. Through lanes run at grade across Kaplan, or they dead-end at the underpass portals"
+ },
+ {
+  "op": "road.set",
+  "anchor": {
+   "osm": "w30741714"
+  },
+  "set": {
+   "tunnel": null,
+   "covered": null,
+   "layer": null,
+   "tlv:at_grade": "yes"
+  },
+  "why": "Menachem Begin under Kaplan, southbound. See northbound"
+ },
+ {
+  "op": "road.set",
+  "anchor": {
+   "osm": "w814648402"
+  },
+  "set": {
+   "tunnel": null,
+   "covered": null,
+   "layer": null,
+   "tlv:at_grade": "yes"
+  },
+  "why": "Carlebach Tunnel, first half. At grade, it links Carlebach Tunnel cutting, Carlebach and Yitzhak Sadeh, which all stopped at its portals"
+ },
+ {
+  "op": "road.set",
+  "anchor": {
+   "osm": "w364646190"
+  },
+  "set": {
+   "tunnel": null,
+   "covered": null,
+   "layer": null,
+   "tlv:at_grade": "yes"
+  },
+  "why": "Carlebach Tunnel, branch to Carlebach. See w814648402"
+ },
+ {
+  "op": "road.set",
+  "anchor": {
+   "osm": "w1020354313"
+  },
+  "set": {
+   "tunnel": null,
+   "covered": null,
+   "layer": null,
+   "tlv:at_grade": "yes"
+  },
+  "why": "Carlebach Tunnel, branch to Yitzhak Sadeh. See w814648402"
+ },
+ {
+  "op": "road.set",
+  "anchor": {
+   "osm": "w119550264"
+  },
+  "set": {
+   "tunnel": null,
+   "covered": null,
+   "layer": null,
+   "tlv:at_grade": "yes"
+  },
+  "why": "HaRakevet underpass eastbound. At grade it reaches La Guardia, which stopped at the portal"
+ },
+ {
+  "op": "road.set",
+  "anchor": {
+   "osm": "w762625688"
+  },
+  "set": {
+   "tunnel": null,
+   "covered": null,
+   "layer": null,
+   "tlv:at_grade": "yes"
+  },
+  "why": "HaRakevet underpass eastbound, tail to La Guardia. See w119550264"
+ },
+ {
+  "op": "road.set",
+  "anchor": {
+   "osm": "w398991152"
+  },
+  "set": {
+   "tunnel": null,
+   "covered": null,
+   "layer": null,
+   "tlv:at_grade": "yes"
+  },
+  "why": "HaRakevet underpass westbound from La Guardia. See w119550264"
+ },
+ {
+  "op": "road.set",
+  "anchor": {
+   "osm": "w96813832"
+  },
+  "set": {
+   "tlv:at_grade": "yes"
+  },
+  "why": "HaHagana bridge westbound over HaHarash. Pass 6 cut it, and the street exists on both sides, so it crosses at grade"
+ },
+ {
+  "op": "road.set",
+  "anchor": {
+   "osm": "w1109541871"
+  },
+  "set": {
+   "tlv:at_grade": "yes"
+  },
+  "why": "HaHagana bridge eastbound over HaHarash. See westbound"
+ },
+ {
+  "op": "road.set",
+  "anchor": {
+   "osm": "w482733919"
+  },
+  "set": {
+   "tlv:at_grade": "yes"
+  },
+  "why": "Bnei Dan westbound under Derekh Namir. Pass 6 cut it, and the street exists on both sides, so it crosses at grade"
+ },
+ {
+  "op": "road.set",
+  "anchor": {
+   "osm": "w1183058443"
+  },
+  "set": {
+   "tlv:at_grade": "yes"
+  },
+  "why": "Bnei Dan eastbound under Derekh Namir. See westbound"
+ },
+ {
+  "op": "road.set",
+  "anchor": {
+   "osm": "w25994766"
+  },
+  "set": {
+   "tlv:at_grade": "yes"
+  },
+  "why": "Rokach bridge over Derekh Namir. Pass 6 cut it, and the street exists on both sides, so it crosses at grade"
+ },
+ {
+  "op": "road.set",
+  "anchor": {
+   "osm": "w83986367"
+  },
+  "set": {
+   "tlv:at_grade": "yes"
+  },
+  "why": "Menachem Begin northern stretch under the Begin bridge, southbound. Pass 6 cut it, so it crosses at grade"
+ },
+ {
+  "op": "road.set",
+  "anchor": {
+   "osm": "w549150399"
+  },
+  "set": {
+   "tlv:at_grade": "yes"
+  },
+  "why": "Menachem Begin northern stretch under the Begin bridge, northbound. See southbound"
+ },
+ {
+  "op": "road.set",
+  "anchor": {
+   "osm": "w1486390099"
+  },
+  "set": {
+   "highway": "tertiary",
+   "construction": null
+  },
+  "why": "Ben Gurion's last 10 m to Ben Yehuda, a stale construction state that left a stub at (-481, 1111)"
+ },
+ {
+  "op": "road.set",
+  "anchor": {
+   "osm": "w206628045"
+  },
+  "set": {
+   "highway": "tertiary",
+   "construction": null
+  },
+  "why": "Arlosoroff eastbound, 513 m, a stale construction state. The road is open"
+ },
+ {
+  "op": "road.set",
+  "anchor": {
+   "osm": "w24637619"
+  },
+  "set": {
+   "name:en": "Mendele Mocher Sforim"
+  },
+  "why": "The street is named after the author's pen name. OSM's name:en translates it"
+ },
+ {
+  "op": "road.set",
+  "anchor": {
+   "osm": "w505831048"
+  },
+  "set": {
+   "name:en": "Mendele Mocher Sforim"
+  },
+  "why": "The street is named after the author's pen name. OSM's name:en translates it"
+ },
+ {
+  "op": "road.delete",
+  "anchor": {
+   "osm": "w355740392"
+  },
+  "why": "Stub through Shalom Meir w203971959, which took the collider off an 8,677 m2 building"
+ },
+ {
+  "op": "road.delete",
+  "anchor": {
+   "osm": "w399110046"
+  },
+  "why": "Stub through Shalom Meir w203971959. See w355740392"
+ },
+ {
+  "op": "road.delete",
+  "anchor": {
+   "osm": "w1000714841"
+  },
+  "why": "8 m stub into Beit Hadar Parking w102850853, which took the collider off an 8,636 m2 building"
+ },
+ {
+  "op": "road.delete",
+  "anchor": {
+   "osm": "w1409234263"
+  },
+  "why": "Basement service way, layer -1, inside the Central Bus Station"
+ },
+ {
+  "op": "road.delete",
+  "anchor": {
+   "osm": "w923168615"
+  },
+  "why": "47 m loop inside Beit Hadar Parking. It took the collider off an 8,636 m2 building"
+ },
+ {
+  "op": "road.delete",
+  "anchor": {
+   "osm": "w149905970"
+  },
+  "why": "Basement service way, layer -1, under the building at (-1365, -1195). It took the collider off 6,890 m2"
+ },
+ {
+  "op": "road.delete",
+  "anchor": {
+   "osm": "w512239993"
+  },
+  "why": "Service alley running 58 m through w198646334. It took the collider off 4,323 m2"
+ },
+ {
+  "op": "road.delete",
+  "anchor": {
+   "osm": "w758524584"
+  },
+  "why": "Service alley running through Bet Romano's footprint. It took the collider off 4,007 m2"
+ },
+ {
+  "op": "road.delete",
+  "anchor": {
+   "osm": "w239183892"
+  },
+  "why": "30 m service stub through w243848134. It took the collider off 3,655 m2"
+ },
+ {
+  "op": "road.delete",
+  "anchor": {
+   "osm": "w96641468"
+  },
+  "why": "One-way service loop touching w96637635. It took the collider off 3,291 m2"
+ },
+ {
+  "op": "road.delete",
+  "anchor": {
+   "osm": "w492069274"
+  },
+  "why": "Service alley through w200835012. It took the collider off 2,729 m2"
+ },
+ {
+  "op": "road.delete",
+  "anchor": {
+   "osm": "w934038175"
+  },
+  "why": "Service way drawn 105 m along the inside of w149372184. It took the collider off 1,916 m2"
+ },
+ {
+  "op": "road.delete",
+  "anchor": {
+   "osm": "w316611417"
+  },
+  "why": "Service alley through w243702002. It took the collider off 1,779 m2"
+ },
+ {
+  "op": "road.delete",
+  "anchor": {
+   "osm": "w316611419"
+  },
+  "why": "Service alley through w243702002. See w316611417"
+ },
+ {
+  "op": "road.delete",
+  "anchor": {
+   "osm": "w1005231736"
+  },
+  "why": "26 m service stub into HaHashmona'im Tower. It took the collider off 1,739 m2"
+ },
+ {
+  "op": "road.delete",
+  "anchor": {
+   "osm": "w495800212"
+  },
+  "why": "32 m service stub through w495800216. It took the collider off 1,544 m2"
+ },
+ {
+  "op": "road.delete",
+  "anchor": {
+   "osm": "w1308126290"
+  },
+  "why": "35 m unnamed link through w228424751. It took the collider off 1,317 m2"
+ },
+ {
+  "op": "road.delete",
+  "anchor": {
+   "osm": "w540056352"
+  },
+  "why": "Service alley through w198776942. It took the collider off 1,295 m2"
+ },
+ {
+  "op": "road.delete",
+  "anchor": {
+   "osm": "w1392369972"
+  },
+  "why": "14 m service stub into w322431984. It took the collider off 1,123 m2"
+ },
+ {
+  "op": "building.clip",
+  "anchor": {
+   "osm": "w265984730"
+  },
+  "line": [
+   [
+    32.0546883,
+    34.7612428
+   ],
+   [
+    32.0531579,
+    34.7606072
+   ]
+  ],
+  "why": "The building's corner lies on street 3903's lane. Trim it instead of losing the whole collider"
+ },
+ {
+  "op": "building.clip",
+  "anchor": {
+   "osm": "w547446043"
+  },
+  "line": [
+   [
+    32.0500063,
+    34.7722032
+   ],
+   [
+    32.0516296,
+    34.7722032
+   ]
+  ],
+  "why": "The building's corner lies on street 3789's lane. Trim it instead of losing the whole collider"
+ },
+ {
+  "op": "building.clip",
+  "anchor": {
+   "osm": "w238249758"
+  },
+  "line": [
+   [
+    32.0500063,
+    34.7722032
+   ],
+   [
+    32.0516296,
+    34.7722032
+   ]
+  ],
+  "why": "The building's corner lies on street 3789's lane. Trim it instead of losing the whole collider"
+ },
+ {
+  "op": "building.clip",
+  "anchor": {
+   "osm": "w199341433"
+  },
+  "line": [
+   [
+    32.0617584,
+    34.7839277
+   ],
+   [
+    32.0619661,
+    34.7820369
+   ]
+  ],
+  "why": "Migdal Carasso's corner lies on Yad Harutzim's lane. Trim it instead of losing the whole collider"
+ },
+ {
+  "op": "building.clip",
+  "anchor": {
+   "osm": "w198774323"
+  },
+  "line": [
+   [
+    32.0742093,
+    34.7946794
+   ],
+   [
+    32.0757527,
+    34.7952701
+   ]
+  ],
+  "why": "The building's east side lies on Ginosar's lane. Trim it instead of losing the whole collider"
+ },
+ {
+  "op": "building.clip",
+  "anchor": {
+   "osm": "w243848133"
+  },
+  "line": [
+   [
+    32.0537672,
+    34.7849462
+   ],
+   [
+    32.0542993,
+    34.7831451
+   ]
+  ],
+  "why": "The building's north wall lies on HaHagana's lane. Trim it instead of losing the whole collider"
+ },
+ {
+  "op": "building.clip",
+  "anchor": {
+   "osm": "r19933969"
+  },
+  "line": [
+   [
+    32.077402,
+    34.7924976
+   ],
+   [
+    32.076793,
+    34.7942649
+   ]
+  ],
+  "why": "Midtown TLV's south corner lies on the road beside it. Trim it instead of losing the whole collider"
+ },
+ {
+  "op": "building.clip",
+  "anchor": {
+   "osm": "w230605310"
+  },
+  "line": [
+   [
+    32.0542466,
+    34.7790887
+   ],
+   [
+    32.0539526,
+    34.7806775
+   ]
+  ],
+  "why": "Derekh Shalma runs through the southern tip of the Central Bus Station. Trimming the tip gives the 38,852 m2 building a collider. Trim it instead of losing the whole collider"
+ },
+ {
+  "op": "road.delete",
+  "anchor": {
+   "osm": "w1005231737"
+  },
+  "why": "Service stub into HaHashmona'im Tower, the partner of w1005231736. It took the collider off 1,739 m2"
+ },
+ {
+  "op": "road.delete",
+  "anchor": {
+   "osm": "w1215824334"
+  },
+  "why": "Dafna link beside the Weizmann stub w1215824332, 20 m between the same two lights. Two 2-lane roads in a V this short cross lanes in the middle, where no stop line can part them. Every move through here still has the Weizmann stub"
+ }
+]

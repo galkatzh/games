@@ -1,0 +1,59 @@
+{
+  "firstRun": false,
+  "flagged": [],
+  "classes": {},
+  "rows": {
+    "ways": {
+      "added": [],
+      "removed": [],
+      "changed": []
+    },
+    "touched": [],
+    "pts": {
+      "added": [],
+      "removed": [],
+      "changed": []
+    },
+    "kerbs": {
+      "added": [],
+      "removed": [],
+      "changed": []
+    },
+    "buildings": {
+      "added": [],
+      "removed": [],
+      "changed": []
+    },
+    "pois": {
+      "added": [],
+      "removed": [],
+      "changed": []
+    },
+    "juncs": {
+      "added": [],
+      "removed": [],
+      "changed": []
+    },
+    "moves": {
+      "added": [],
+      "removed": [],
+      "changed": []
+    },
+    "stops": {
+      "added": [],
+      "removed": [],
+      "changed": []
+    },
+    "xings": {
+      "added": [],
+      "removed": [],
+      "changed": []
+    },
+    "walls": {
+      "added": [],
+      "removed": [],
+      "changed": []
+    },
+    "other": []
+  }
+}

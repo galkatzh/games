@@ -1,0 +1,13 @@
+{
+  "explicitYes": ["yes", "lane", "street_side"],
+  "explicitNo": ["no"],
+  "zoneFallbackKeys": ["parking_zone"],
+  "inferred": {
+    "both": ["residential", "unclassified", "living_street"],
+    "right": ["tertiary"]
+  },
+  "buffersM": { "junction": 12, "deadEnd": 3, "crossing": 5, "stop": 15 },
+  "forms": { "parallel": 0, "diagonal": 1, "perpendicular": 2 },
+  "tiers": { "curated": 0, "explicit": 1, "zone": 2, "inferred": 3, "none": 255 },
+  "paint": { "none": 0, "red_white": 1, "red_yellow": 2, "blue_white": 3 }
+}

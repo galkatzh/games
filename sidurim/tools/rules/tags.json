@@ -1,0 +1,49 @@
+{
+  "classOrder": ["primary", "secondary", "tertiary", "unclassified", "residential", "living_street", "service"],
+  "classes": {
+    "primary":       { "oneway": 3, "twoway": 2, "kmh": 50, "laneW": 3.4 },
+    "secondary":     { "oneway": 2, "twoway": 1, "kmh": 50, "laneW": 3.3 },
+    "tertiary":      { "oneway": 2, "twoway": 1, "kmh": 50, "laneW": 3.2 },
+    "unclassified":  { "oneway": 1, "twoway": 1, "kmh": 30, "laneW": 3.0 },
+    "residential":   { "oneway": 1, "twoway": 1, "kmh": 30, "laneW": 3.0 },
+    "living_street": { "oneway": 1, "twoway": 1, "kmh": 15, "laneW": 2.8 },
+    "service":       { "oneway": 1, "twoway": 1, "kmh": 15, "laneW": 2.8 }
+  },
+  "lanesMin": 1,
+  "lanesMax": 5,
+  "section": {
+    "parkingStripM": 2.4,
+    "sidewalkM": 2.5,
+    "sidewalkWideM": 3.5,
+    "sidewalkWideClasses": ["primary", "secondary"],
+    "sidewalkMinM": 1.0,
+    "laneWMinM": 2.6,
+    "laneWSaneM": 2.8,
+    "overlapAllow": [
+      { "ways": [762625688, 904582103], "why": "HaRakevet and Levanda meet at La Guardia on 3 m stubs, each behind a PASS with no room to pull back. Centres read 1.72 m for one metre, an 8 cm brush." },
+      { "ways": [482733919, 1183058443], "why": "Bnei Dan across the Namir median, two opposing 2-lane links 17 m long and 3.9 m apart between two lights. Their inner lanes are 3 m stubs 0.8 m apart with nowhere to pull back to. A lanes overlay on either changes contraction and takes a lane off 75 m of Bnei Dan, which costs more than this does." }
+    ],
+    "hollowAllow": [
+      { "osm": "w765979741", "why": "Hotel on the Atarim Square deck, tagged layer 1. Eliezer Peri really does run beneath it, so the road passes through." }
+    ]
+  },
+  "buildings": {
+    "levelHeightM": 3.1,
+    "kinds": {
+      "residential": ["residential", "apartments", "house", "detached", "semidetached_house", "terrace", "hostel"],
+      "commercial": ["commercial", "hotel"],
+      "office": ["office"],
+      "retail": ["retail", "kiosk", "supermarket"],
+      "civic": ["civic", "public", "government", "train_station", "transportation", "fire_station", "stadium",
+                "sports_centre", "sports_hall", "university", "college"],
+      "religious": ["synagogue", "mosque", "church", "temple", "chapel", "cathedral", "shrine"],
+      "school": ["school", "kindergarten"],
+      "hospital": ["hospital"],
+      "industrial": ["industrial", "warehouse", "manufacture", "service", "garage", "garages", "shed"]
+    },
+    "kindOrder": ["generic", "residential", "commercial", "office", "retail", "civic", "religious", "school", "hospital",
+                  "industrial"],
+    "roofPitched": ["gabled", "hipped", "pyramidal", "crosspitched", "skillion"],
+    "roofDome": ["dome", "round", "onion"]
+  }
+}
