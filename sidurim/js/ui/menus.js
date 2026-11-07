@@ -341,6 +341,16 @@
     creditsBlock(t('credits.art'), ids.length ? ids.map(function (id) {
       return { text: creditLine(id, index[id].credit) };
     }) : [{ text: t('credits.noArt') }]);
+    var sounds = TLV.soundIndex && Array.isArray(TLV.soundIndex.credits) ? TLV.soundIndex.credits : [];
+    var soundLines = [];
+    sounds.forEach(function (c) {
+      soundLines.push({ text: creditLine(String(c.title), c), ltr: true });
+      if (typeof c.changes === 'string' && c.changes) soundLines.push({ text: c.changes, ltr: true });
+      if (typeof c.source === 'string') soundLines.push({ text: c.source.replace(/^https:\/\//, ''), ltr: true });
+    });
+    if (!soundLines.length) soundLines.push({ text: t('credits.noSound') });
+    soundLines.push({ text: t('credits.radio') });
+    creditsBlock(t('credits.sound'), soundLines);
   }
 
   function buildEnd(root) {

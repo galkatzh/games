@@ -192,7 +192,13 @@ test('js/core, js/world and js/sim use nothing forbidden', () => {
 test('all of js/ avoids Workers, local fetches, module syntax and CDNs', () => {
   const hits = allFiles.flatMap((f) => {
     const raw = fs.readFileSync(path.join(ROOT, f), 'utf8');
-    const found = findBanned(f, ALL_BANNED, stripSource(raw));
+    let found = findBanned(f, ALL_BANNED, stripSource(raw));
+    // The one remote fetch: the car radio asks radio-browser.info, over HTTPS, which works from file:// too. tests/ui/ui.test.mjs
+    // pins it as the only fetch in that file, and every address it can reach as https.
+    if (f === 'js/ui/audio.js') {
+      const remote = raw.split('\n').map((line, i) => (/window\.fetch\(RADIO_API\[i\+\+\] \+ RADIO_QUERY\)/.test(line) ? `${f}:${i + 1} uses fetch(` : null));
+      found = found.filter((hit) => !remote.includes(hit));
+    }
     if (CDN.test(raw)) found.push(`${f} names a CDN`);
     return found;
   });

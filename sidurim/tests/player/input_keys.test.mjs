@@ -86,7 +86,7 @@ test('a held R tows and restarts as it always did, and a tap does not hold the t
   assert.equal(after.restart, false);
 });
 
-for (const code of ['Escape', 'KeyP', 'KeyC', 'KeyV', 'KeyM']) {
+for (const code of ['Escape', 'KeyP', 'KeyC', 'KeyV', 'KeyM', 'KeyN', 'KeyB']) {
   test(`${code} is a page key: not start, tapped or held, so pausing on a card cannot skip it`, () => {
     const k = keyboard();
     k.key('keydown', code);

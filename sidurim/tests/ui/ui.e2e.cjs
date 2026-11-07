@@ -647,6 +647,109 @@ async function main() {
     });
   });
 
+  await scenario('audio: the horn recordings decode, and a honk plays them instead of the synthesizer', async () => {
+    await withGame('?seed=1&notitle=1', {}, async (page) => {
+      await page.keyboard.press('Shift');
+      await page.waitForFunction(() => TLV.audio.info().samples.length === TLV.soundIndex.ids.length, null, { timeout: 30000 });
+      const ids = await page.evaluate(() => TLV.audio.info().samples);
+      for (const id of ['car_a', 'car_b', 'car_hold', 'bus_toot', 'bus_double', 'bus_triple', 'bus_long']) assert.ok(ids.includes(id), id);
+      assert.strictEqual(await page.evaluate(() => TLV.sounds), null, 'the base64 is let go once decoded');
+      const started = await page.evaluate(() => {
+        const S = TLV.app.S;
+        const before = TLV.audio.info().started;
+        TLV.ui.dispatch('traffic.honk', { vehId: 7, atPlayer: false, x: S.player.fx + 20, y: S.player.fy });
+        const near = TLV.audio.info().started - before;
+        TLV.ui.dispatch('traffic.redRun', { vehId: 7, juncId: 1, x: S.player.fx + 5000, y: S.player.fy });
+        TLV.ui.dispatch('traffic.door', { vehId: 7, open: true, x: S.player.fx + 5000, y: S.player.fy });
+        return { near, far: TLV.audio.info().started - before - near };
+      });
+      assert.ok(started.near >= 1, 'a honk plays');
+      assert.strictEqual(started.far, 0, 'a red run and a door far away are not heard');
+    });
+  });
+
+  await scenario('radio: off in a driven browser, and with ?radio=on it tunes, skips the dead, changes, stops and comes back live', async () => {
+    // A stand-in for the <audio> element: it plays any address but one, which errors, as a dead station does.
+    const init = () => {
+      window.__radio = [];
+      window.Audio = function () {
+        const el = document.createElement('div');
+        el.volume = 1;
+        el.paused = true;
+        el.play = function () {
+          const src = el.getAttribute('src') || el.src;
+          window.__radio.push(src);
+          el.paused = false;
+          setTimeout(() => el.dispatchEvent(new Event(/dead\.example/.test(src) ? 'error' : 'playing')), 30);
+          return Promise.resolve();
+        };
+        el.pause = function () { el.paused = true; };
+        el.load = function () {};
+        return el;
+      };
+    };
+    const directory = [
+      { name: 'Dead FM', url_resolved: 'https://dead.example/stream', codec: 'MP3', hls: 0, lastcheckok: 1 },
+      { name: 'Live FM', url_resolved: 'https://live.example/stream', codec: 'AAC', hls: 0, lastcheckok: 1 },
+      { name: 'Plain HTTP', url_resolved: 'http://insecure.example/stream', codec: 'MP3', hls: 0, lastcheckok: 1 },
+      { name: 'HLS', url_resolved: 'https://hls.example/live.m3u8', codec: 'AAC', hls: 1, lastcheckok: 1 }
+    ];
+    const routes = (page) => page.route(/radio-browser\.info/, (r) => r.fulfill({ contentType: 'application/json', body: JSON.stringify(directory) }));
+    await withGame('?seed=1', { init, routes }, async (page) => {
+      await page.keyboard.press('Shift');
+      await lib.frames(page, 4);
+      const off = await page.evaluate(() => TLV.audio.radioInfo());
+      assert.strictEqual(off.allowed, false, 'navigator.webdriver keeps it off on auto');
+      assert.deepStrictEqual(await page.evaluate(() => window.__radio), []);
+    });
+    await withGame('?seed=1&radio=on', { init, routes }, async (page) => {
+      // The last station of the list each time: the built-in list's last before the directory answers.
+      await page.evaluate(() => {
+        Math.random = () => 0.999;
+      });
+      await page.keyboard.press('Shift');
+      await page.waitForFunction(() => TLV.audio.radioInfo().state === 'playing');
+      await page.waitForFunction(() => TLV.audio.radioInfo().stations === 18);
+      let info = await page.evaluate(() => TLV.audio.radioInfo());
+      assert.strictEqual(info.station, 'Kol Chai');
+      assert.ok(info.volume >= 0 && info.volume <= 1);
+      await page.keyboard.press('Enter');
+      await page.waitForFunction(() => TLV.debug.state().phase !== 'TITLE');
+      // Only the two HTTPS, non-HLS stations joined the built-in sixteen. Of the seventeen left to try, Dead FM is the sixteenth:
+      // N lands on it, it fails, and the radio moves on by itself.
+      await page.evaluate(() => {
+        Math.random = () => 0.9;
+      });
+      await page.keyboard.press('KeyN');
+      await page.waitForFunction(() => window.__radio.some((u) => /dead\.example/.test(u)));
+      await page.waitForFunction(() => TLV.audio.radioInfo().state === 'playing' && TLV.audio.radioInfo().station !== 'Dead FM');
+      info = await page.evaluate(() => TLV.audio.radioInfo());
+      assert.notStrictEqual(info.station, 'Kol Chai');
+      await page.waitForFunction(() => TLV.ui.hud._view().toasts.some((t) => /On the radio/.test(t.text)));
+      await page.keyboard.press('KeyB');
+      await lib.frames(page, 2);
+      assert.strictEqual(await page.evaluate(() => TLV.audio.radioInfo().state), 'off');
+      assert.strictEqual(await page.evaluate(() => localStorage.getItem('sidurim.radio')), '0');
+      await page.keyboard.press('KeyB');
+      await page.waitForFunction(() => TLV.audio.radioInfo().state === 'playing');
+      await page.keyboard.press('KeyM');
+      await lib.frames(page, 2);
+      assert.strictEqual(await page.evaluate(() => TLV.audio.radioInfo().state), 'off', 'mute stops it');
+      await page.keyboard.press('KeyM');
+      await page.waitForFunction(() => TLV.audio.radioInfo().state === 'playing');
+      const before = await page.evaluate(() => window.__radio.length);
+      await page.keyboard.press('Escape');
+      await lib.frames(page, 2);
+      assert.strictEqual(await page.evaluate(() => TLV.audio.radioInfo().state), 'off', 'pause stops it');
+      await page.keyboard.press('Escape');
+      await page.waitForFunction(() => TLV.audio.radioInfo().state === 'playing');
+      assert.ok(await page.evaluate((n) => window.__radio.length > n, before), 'it comes back by playing again, from the live edge');
+      const urls = await page.evaluate(() => window.__radio);
+      assert.ok(urls.every((u) => /^https:\/\//.test(u)), urls.join());
+      assert.ok(!urls.some((u) => /insecure|m3u8/.test(u)));
+    });
+  });
+
   await scenario('all five end screens through TLV.debug.ui', async () => {
     await withGame('?seed=1&notitle=1&mute=1', {}, async (page) => {
       await held(page);

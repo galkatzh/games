@@ -112,7 +112,7 @@
     clearState(veh);
     if (had) {
       veh.door = 0;
-      emit(S, 'traffic.door', { vehId: veh.id, open: false });
+      emit(S, 'traffic.door', { vehId: veh.id, x: veh.x, y: veh.y, open: false });
     }
     beh.set(S, veh, 'CRUISE');
   };
@@ -281,6 +281,9 @@
     if (st === SIG.GREEN) return;
     var nose = TLV.traffic.gate.noseTo(S, veh, index);
     var hasGrant = index < t.pg;
+    // In front of the player, and far enough for the player to stop, the drivers who run are not only the boldest.
+    var mul = redMul(S, veh);
+    var bold = mul > 1 ? Q.nearBolder : 0;
 
     if (t.decided !== c && veh.v > 1) {
       var tta = nose / veh.v;
@@ -289,8 +292,8 @@
         var left = st === SIG.AMBER ? signals.timeToRed(S, c) + Q.redLateS : Q.redLateS;
         if (tta < 4) {
           t.decided = c;
-          var lateP = Math.min(Q.redBoostMax, Q.redLateP * nearBoost(S, veh));
-          if (veh.ag > Q.redLateAg && tta <= left && !runTaken(S, conn) && S.rng.traffic.bool(lateP)) {
+          var lateP = Math.min(Q.redBoostMax, Q.redLateP * mul);
+          if (veh.ag > Q.redLateAg - bold && tta <= left && !runTaken(S, conn) && S.rng.traffic.bool(lateP)) {
             commitRun(S, veh, c);
             return;
           }
@@ -303,13 +306,13 @@
       }
     }
 
-    if (!hasGrant && st === SIG.RED && nose < 3 && veh.v < 1 && veh.ag > Q.redJumpAg) {
+    if (!hasGrant && st === SIG.RED && nose < 3 && veh.v < 1 && veh.ag > Q.redJumpAg - bold) {
       var ttg = signals.timeToGreen(S, c);
       var ctrl = W.ctrls[W.juncs[conn.junc].ctrl];
       var cycle = Math.floor((S.t + ttg) / ctrl.cycleS);
       if (ttg < Q.redJumpS && ttg > 0 && t.jumpCycle !== cycle) {
         t.jumpCycle = cycle;
-        var jumpP = Math.min(Q.redBoostMax, Q.redJumpP * nearBoost(S, veh));
+        var jumpP = Math.min(Q.redBoostMax, Q.redJumpP * mul);
         if (!runTaken(S, conn) && S.rng.traffic.bool(jumpP)) commitRun(S, veh, c);
       }
     }
@@ -323,7 +326,7 @@
    */
   beh.crossedOnRed = function (S, veh, conn) {
     if (TLV.world.signals.connState(S, conn.id) === TLV.const.SIG.RED) {
-      emit(S, 'traffic.redRun', { vehId: veh.id, juncId: conn.junc });
+      emit(S, 'traffic.redRun', { vehId: veh.id, juncId: conn.junc, x: veh.x, y: veh.y });
     }
   };
 
@@ -361,7 +364,7 @@
     var conn = W.conns[c];
     var forced = veh.beh === 'NOSE_IN';
     if (!forced) {
-      var least = Q.noseAg - (nearBoost(S, veh) > 1 ? Q.nearBolder : 0);
+      var least = Q.noseAg - bolderFor(veh);
       if (veh.beh !== 'CRUISE' || veh.ag < least || T.count.NOSE_IN >= Q.noseMax || t.waitT < Q.noseWaitS) return false;
       if (W.lanes[conn.to].cls >= W.lanes[conn.from].cls) return false;
     }
@@ -938,7 +941,7 @@
     // The stop line is up to 1.5 m on, and a door stays shut until the car stands on it: a passenger does not step out of a rolling car.
     if (veh.door === 0 && !t.spawnedPed && t.doorT >= Q.dropDoorS && veh.v < Q.dropStillV && doorClear(S, veh)) {
       veh.door = t.doorKind;
-      emit(S, 'traffic.door', { vehId: veh.id, open: true });
+      emit(S, 'traffic.door', { vehId: veh.id, x: veh.x, y: veh.y, open: true });
       spawnPassenger(S, veh);
     }
     capBlocker(S, veh);
@@ -946,7 +949,7 @@
     if (t.timer > 0) return;
     if (veh.door) {
       veh.door = 0;
-      emit(S, 'traffic.door', { vehId: veh.id, open: false });
+      emit(S, 'traffic.door', { vehId: veh.id, x: veh.x, y: veh.y, open: false });
     }
     veh.lights &= ~TLV.const.VL.HAZARD;
     veh.lights |= TLV.const.VL.BLINK_L;
@@ -1055,21 +1058,137 @@
 
   // ---- Ambient triggers. ------------------------------------------------------------------------------------------------
 
-  /**
-   * How much sooner a car misbehaves for being where the player can see it. Most of the bubble is behind buildings or behind the
-   * player, and a stop or a run nobody sees is no use to anyone. The design's rates stand for the rest.
-   * @returns {number} Q.nearBoost ahead of the player and in reach, else 1.
-   */
-  function nearBoost(S, veh) {
+  // Where the player will feel it. Most of the bubble is behind buildings or behind the player, and a stop or a run nobody meets is
+  // no use to anyone. Each car is put in a tier once per evaluation:
+  //   SIGHT.ROUTE_SAME  on the player's route ahead, going the player's way: it blocks the player's own road
+  //   SIGHT.ROUTE_NEAR  beside the route ahead, any way: cross traffic at the next junctions, the oncoming lane, a side road
+  //   SIGHT.VIEW        in the cone ahead of the player, off the route
+  //   SIGHT.FAR         anywhere else
+  // and never nearer than the player needs to react, so nothing is thrown under the player's wheels.
+  var SIGHT = { FAR: 0, VIEW: 1, ROUTE_NEAR: 2, ROUTE_SAME: 3 };
+  beh.SIGHT = SIGHT;
+
+  /** Samples the player's route ahead, and the player's pose, at most every sightTicks. @returns {object} T.sight. */
+  function prepSight(S) {
+    var T = S.traffic;
     var Q = TLV.tune.traffic;
+    var G = T.sight;
+    if (!G) {
+      var cap = Math.ceil(Q.spotM / Q.spotStepM) + 2;
+      G = T.sight = { tk: -Infinity, ok: false, px: 0, py: 0, ch: 1, sh: 0, minAhead: 0, cone: 0, n: 0, x: new Float64Array(cap),
+        y: new Float64Array(cap), rc: new Float64Array(cap), rs: new Float64Array(cap), at: { x: 0, y: 0, h: 0 } };
+    }
+    if (T.tk - G.tk < Q.sightTicks) return G;
+    G.tk = T.tk;
     var p = S.player;
-    if (!p) return 1;
-    var dx = veh.x - p.fx;
-    var dy = veh.y - p.fy;
-    if (dx * dx + dy * dy > Q.nearM * Q.nearM) return 1;
     var me = S.vehicles[0];
-    return dx * Math.cos(me.h) + dy * Math.sin(me.h) > 0 ? Q.nearBoost : 1;
+    G.ok = !!p && !!me;
+    G.n = 0;
+    if (!G.ok) return G;
+    var foot = p.mode === 'FOOT' && p.foot;
+    var h = foot ? p.foot.h : me.h;
+    var v = foot ? 0 : Math.abs(me.v);
+    G.px = p.fx;
+    G.py = p.fy;
+    G.ch = Math.cos(h);
+    G.sh = Math.sin(h);
+    G.minAhead = Q.spotMinM + v * Q.spotMinS;
+    G.cone = Math.cos(Q.spotDeg * Math.PI / 180);
+    var nav = !foot && S.game && S.game.nav;
+    var route = nav ? nav.route : null;
+    if (!route || !(nav.s >= 0)) return G;
+    var end = Math.min(route.len, nav.s + Q.spotM);
+    for (var s = nav.s + G.minAhead; s <= end && G.n < G.x.length; s += Q.spotStepM) {
+      TLV.math.polyAt(route.px, route.py, route.cum, s, G.at);
+      G.x[G.n] = G.at.x;
+      G.y[G.n] = G.at.y;
+      G.rc[G.n] = Math.cos(G.at.h);
+      G.rs[G.n] = Math.sin(G.at.h);
+      G.n++;
+    }
+    return G;
   }
+
+  /**
+   * @param {object} S Sim state.
+   * @param {object} veh Vehicle.
+   * @returns {number} A SIGHT tier.
+   */
+  beh.sight = function (S, veh) {
+    var Q = TLV.tune.traffic;
+    var G = prepSight(S);
+    if (!G.ok) return SIGHT.FAR;
+    var dx = veh.x - G.px;
+    var dy = veh.y - G.py;
+    var d2 = dx * dx + dy * dy;
+    if (d2 > Q.spotM * Q.spotM) return SIGHT.FAR;
+    var fwd = dx * G.ch + dy * G.sh;
+    if (fwd < G.minAhead) return SIGHT.FAR;
+    var t = veh._t;
+    var lat2 = Q.spotLatM * Q.spotLatM;
+    for (var i = 0; i < G.n; i++) {
+      var ex = veh.x - G.x[i];
+      var ey = veh.y - G.y[i];
+      if (ex * ex + ey * ey <= lat2) return t.cosH * G.rc[i] + t.sinH * G.rs[i] >= Q.spotSameCos ? SIGHT.ROUTE_SAME : SIGHT.ROUTE_NEAR;
+    }
+    return fwd / Math.sqrt(d2) >= G.cone ? SIGHT.VIEW : SIGHT.FAR;
+  };
+
+  /**
+   * What a red run's chance is multiplied by. Near the player it is only boosted where the player could still stop for it, by the
+   * rule the staged incidents keep (GAME_DESIGN 11): closer than that, it keeps the design's rate.
+   * @returns {number} Multiplier.
+   */
+  function redMul(S, veh) {
+    var Q = TLV.tune.traffic;
+    var G = prepSight(S);
+    if (!G.ok) return Q.farShare;
+    // A run is a crossing, and the junction the player is about to cross has its cross traffic wide of any cone: the whole half
+    // of the street ahead counts.
+    var dx = veh.x - G.px;
+    var dy = veh.y - G.py;
+    var fwd = dx * G.ch + dy * G.sh;
+    if (fwd <= 0 || dx * dx + dy * dy > Q.spotM * Q.spotM) return Q.farShare;
+    var v = Math.abs(S.vehicles[0].v);
+    if (fwd < Q.redFairM + v * Q.redFairS + v * v / Q.redFairDecel) return 1;
+    return veh._t.sight === SIGHT.ROUTE_NEAR ? Q.routeBoost : Q.nearBoost;
+  }
+
+  /** @returns {number} Aggression a car is let off, for where it is: more on the player's route, and always when the player leads it. */
+  function bolderFor(veh) {
+    var Q = TLV.tune.traffic;
+    var tier = veh._t.sight;
+    if (tier === SIGHT.ROUTE_NEAR || tier === SIGHT.ROUTE_SAME) return Q.routeBolder;
+    return tier === SIGHT.VIEW || veh._t.lead === 0 ? Q.nearBolder : 0;
+  }
+
+  /**
+   * The cap on lane blockers. Near the player it counts only the blockers still ahead and in reach, so one the player left behind
+   * does not hold a slot, and a blocker far away never does. A ceiling of max + spotCapExtra holds for the whole bubble.
+   * @returns {boolean} True when another may start.
+   */
+  function blockerRoom(S, names, max, near) {
+    var T = S.traffic;
+    var Q = TLV.tune.traffic;
+    var all = 0;
+    for (var k = 0; k < names.length; k++) all += T.count[names[k]];
+    if (!near) return all < max;
+    if (all >= max + Q.spotCapExtra) return false;
+    var G = prepSight(S);
+    var ahead = 0;
+    for (var i = 0; i < T.nAct; i++) {
+      var other = S.vehicles[T.act[i]];
+      if (!other.active || names.indexOf(other.beh) < 0) continue;
+      var dx = other.x - G.px;
+      var dy = other.y - G.py;
+      if (dx * dx + dy * dy <= Q.spotM * Q.spotM && dx * G.ch + dy * G.sh > -Q.spotBehindM) ahead++;
+    }
+    return ahead < max;
+  }
+
+  var PHANTOM = ['PHANTOM_STOP'];
+  var DOUBLE = ['DOUBLE_PARK'];
+  var DROPS = ['DROP_APPROACH', 'DROPPED', 'PULLOUT'];
 
   /** Slow-leader clock for the overtake trigger. */
   function trackSlow(S, veh, dt) {
@@ -1098,8 +1217,7 @@
     if (t.lcTo >= 0) return;
     if (tryTailgate(S, veh)) return;
     var lane = W.lanes[veh.laneId];
-    var boost = nearBoost(S, veh);
-    var bolder = boost > 1 ? Q.nearBolder : 0;
+    var bolder = bolderFor(veh);
     if (t.slowT >= Q.overSlowS && veh.ag > Q.overAg - bolder && overCount(T) < Q.overMax && tryOvertake(S, veh, false)) return;
     // Nobody here sits behind a car that is in their way, and to these drivers the player is always in their way.
     if (t.lead === 0 && t.leadGap <= Q.overPlayerM && veh.ag > Q.overAg - bolder && S.t >= T.passT && overCount(T) < Q.overMax &&
@@ -1109,25 +1227,29 @@
     }
     if (tryBus(S, veh)) return;
     // Each rate is a clock on the car, per minute of its life, that goes off at the first place it may act. A chance per evaluation
-    // would be spent on cars standing at lights, and the rates would fall to a fifth of what the design asks for. Out of the player's
-    // sight the clock runs slow: a blocker nobody can see costs a queue and buys nothing.
-    var clock = boost > 1 ? dt : dt * Q.blockerAway;
+    // would be spent on cars standing at lights, and the rates would fall to a fifth of what the design asks for. The clock runs
+    // fastest on the player's own road ahead, at the design's rate elsewhere in front of the player, and slow out of sight, where a
+    // blocker costs a queue and buys nothing. A clock that has gone off out of sight waits for the car to come into view, and only
+    // after farHoldS of waiting does it act where it is, so the city away from the player still has the odd one.
+    var tier = t.sight;
+    var near = tier !== SIGHT.FAR;
+    var clock = dt * (tier === SIGHT.ROUTE_SAME ? Q.routeRate : near ? Q.viewRate : Q.blockerAway);
     t.duePhantom -= clock;
     t.dueDouble -= clock;
     t.dueDrop -= clock;
+    var due = near ? 0 : -Q.farHoldS * Q.blockerAway;
     if (veh.v > 3 && stopAllowed(lane, veh) && !(T.calmOn && T.calm[lane.dirEdge])) {
-      if (t.duePhantom <= 0 && T.count.PHANTOM_STOP < Q.phantomMax) {
+      if (t.duePhantom <= due && blockerRoom(S, PHANTOM, Q.phantomMax, near)) {
         t.duePhantom = TLV.traffic.pool.nextDue(rng, Q.phantomRate);
         startPhantom(S, veh, rng.range(Q.phantomBrakeMin, Q.phantomBrakeMax), rng.range(Q.phantomMinS, Q.phantomMaxS));
         return;
       }
-      if (t.dueDouble <= 0 && T.count.DOUBLE_PARK < Q.doubleMax) {
+      if (t.dueDouble <= due && blockerRoom(S, DOUBLE, Q.doubleMax, near)) {
         t.dueDouble = TLV.traffic.pool.nextDue(rng, Q.doubleRate);
         startDouble(S, veh, rng.range(Q.doubleMinS, Q.doubleMaxS));
         return;
       }
-      var drops = T.count.DROP_APPROACH + T.count.DROPPED + T.count.PULLOUT;
-      if (t.dueDrop <= 0 && lane.right < 0 && drops < Q.dropMax && veh.kind !== 'bus' && veh.kind !== 'truck') {
+      if (t.dueDrop <= due && lane.right < 0 && blockerRoom(S, DROPS, Q.dropMax, near) && veh.kind !== 'bus' && veh.kind !== 'truck') {
         t.dueDrop = TLV.traffic.pool.nextDue(rng, Q.dropRate);
         startDrop(S, veh, rng.range(Q.dropMinS, Q.dropMaxS), 'traffic', true);
         return;
@@ -1342,6 +1464,7 @@
     var dt = period();
     var t = veh._t;
     veh.behT += dt;
+    t.sight = beh.sight(S, veh);
     if (t.lcCool > 0) t.lcCool -= dt;
     var onPath = veh.mode === 'LANE' || veh.mode === 'CONN';
     if (onPath) {
@@ -1461,7 +1584,7 @@
       }
     } else if (kind === SK.STANDOFF) {
       veh.door = t.standoffDoor === 2 ? 2 : 1;
-      emit(S, 'traffic.door', { vehId: veh.id, open: true });
+      emit(S, 'traffic.door', { vehId: veh.id, x: veh.x, y: veh.y, open: true });
     } else if (kind === SK.TOW) {
       TLV.traffic.despawn(S, veh, t.towReason);
     } else if (kind === SK.PULL_OVER) {
@@ -1714,7 +1837,7 @@
       t.timer -= dt;
       if (t.timer <= 0) {
         veh.door = 0;
-        emit(S, 'traffic.door', { vehId: veh.id, open: false });
+        emit(S, 'traffic.door', { vehId: veh.id, x: veh.x, y: veh.y, open: false });
         beh.set(S, veh, 'CRUISE');
       }
     }
@@ -1972,7 +2095,7 @@
         veh.door = cmd.side === 'curb' ? 2 : 1;
         t.timer = cmd.holdS > 0 ? cmd.holdS : Q.doorMaxS;
         beh.set(S, veh, 'DOOR_OPEN');
-        emit(S, 'traffic.door', { vehId: veh.id, open: true });
+        emit(S, 'traffic.door', { vehId: veh.id, x: veh.x, y: veh.y, open: true });
         return true;
       case 'PULLOUT':
         return beh.pullOut(S, veh);

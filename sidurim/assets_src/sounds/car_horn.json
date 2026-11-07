@@ -1,0 +1,14 @@
+{
+  "file": "car_horn.flac",
+  "title": "Car Horn",
+  "source": "https://commons.wikimedia.org/wiki/File:Car_Horn.wav (from https://freesound.org/people/15HPanska_Ruttner_Jan/sounds/461679/). Stored here as lossless FLAC of the original WAV",
+  "changes": "cut into two clips and a loop, mono, peak-normalized, re-encoded",
+  "credit": { "author": "15HPanska_Ruttner_Jan", "license": "cc0", "date": "2019-02" },
+  "cuts": {
+    "car_a": [0.515, 0.905],
+    "car_b": [1.905, 2.37]
+  },
+  "loops": {
+    "car_hold": [1.955, 2.085]
+  }
+}

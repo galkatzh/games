@@ -33,6 +33,7 @@
     knife: { type: 'enum', values: ['auto', 'off', 'force'], def: 'auto' },
     quality: { type: 'enum', values: ['auto', 'low', 'med', 'high'], def: 'auto' },
     mute: { type: 'flag', def: 0 },
+    radio: { type: 'enum', values: ['auto', 'on', 'off'], def: 'auto' },
     hud: { type: 'flag', def: 1 },
     timescale: { type: 'number', min: 1e-3, max: Infinity, def: 1 }
   };

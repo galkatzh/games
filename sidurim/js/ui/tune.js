@@ -9,6 +9,7 @@
     keyLang: 'sidurim.lang',
     keyBest: 'sidurim.best',
     keyMute: 'sidurim.mute',
+    keyRadio: 'sidurim.radio',
 
     // Displayed clock.
     clockTenthsBelowS: 10,
@@ -170,6 +171,23 @@
     voicesMax: 28,
     honksPerS: 2,
     honkRangeM: 130,
+    /** Recorded honks: peak gain near, at a car and at the player, and a lowpass that dulls them from clear to far. */
+    honkSampleGain: 0.36,
+    honkSampleGainAt: 0.6,
+    honkClearHz: 9000,
+    honkDullHz: 900,
+    /** The player's own horn, the recorded loop. */
+    hornSampleGain: 0.32,
+    /** Past these, a red run or a car door is too far to hear. */
+    redRunRangeM: 200,
+    doorRangeM: 60,
+    /** The car radio: element volume in the car, its share behind the menus and on foot, how long a station has to start, and how
+     * many dead stations in a row before it gives up. */
+    radioGain: 0.5,
+    radioMenuShare: 0.45,
+    radioFootShare: 0.3,
+    radioTuneS: 12,
+    radioMaxFails: 8,
     engineIdleHz: 58,
     engineSpanHz: 150,
     engineGearStepHz: 0.13,

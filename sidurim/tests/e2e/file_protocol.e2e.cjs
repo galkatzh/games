@@ -60,7 +60,7 @@ async function main() {
       await page.waitForSelector('#load-error', { timeout: 30000 });
       const text = await page.textContent('#load-error');
       assert.match(text, /cannot start/);
-      const expected = [...missing, 'data/maps/index.js', 'data/assets/index.js', 'css/ui.css',
+      const expected = [...missing, 'data/maps/index.js', 'data/assets/index.js', 'data/sounds/index.js', 'css/ui.css',
         'content/tlv_center/errands.js', 'content/tlv_center/landmarks.js'];
       for (const file of expected) assert.ok(text.includes(file), `${file} is not listed`);
       assert.match(text, /node tools\/import\.mjs/);
@@ -129,7 +129,7 @@ async function main() {
     await withPage({ root, params: '?seed=7&notitle=1', init: recordInjections, before: slow }, async ({ page, logs }) => {
       await ticking(page, 1);
       const content = await page.evaluate(() => TLV.contentFiles.default);
-      const indexes = ['data/maps/index.js', 'content/index.js', 'data/assets/index.js'];
+      const indexes = ['data/maps/index.js', 'content/index.js', 'data/assets/index.js', 'data/sounds/index.js'];
       const first = [...list.sim, ...list.browser, ...indexes];
       const second = ['data/maps/stub/map.js', ...content];
 

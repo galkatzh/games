@@ -18,7 +18,7 @@
   };
 
   /** Keys that act on the page and never enter ControlState. They are no one's "any key": pausing on a card must not skip it. */
-  var UI_KEYS = { Escape: true, KeyP: true, KeyC: true, KeyV: true, KeyM: true };
+  var UI_KEYS = { Escape: true, KeyP: true, KeyC: true, KeyV: true, KeyM: true, KeyN: true, KeyB: true };
 
   /** Held keys, by KeyboardEvent.code. Input state is the browser's, not the sim's, and there is one keyboard. */
   var held = {};
@@ -141,6 +141,8 @@
       case 'KeyC': toggleCamera(); break;
       case 'KeyV': toggleRearview(); break;
       case 'KeyM': toggleMute(); break;
+      case 'KeyN': if (TLV.audio && TLV.audio.radioNext) TLV.audio.radioNext(); break;
+      case 'KeyB': if (TLV.audio && TLV.audio.radioToggle) TLV.audio.radioToggle(); break;
       default: break;
     }
   }

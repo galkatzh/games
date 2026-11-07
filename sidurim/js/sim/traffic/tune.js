@@ -170,13 +170,40 @@
     /** Mandatory changes start this far from the lane end (ARCHITECTURE 12.5). */
     mandatoryM: 60,
 
-    // What the player can see (a tuning of GAME_DESIGN 9). Within nearM and ahead of the player, red runs are nearBoost times as likely
-    // up to redBoostMax, and the aggression an overtake or a nose-in needs drops by nearBolder. Lane blockers run at the design's rates
-    // there, and at blockerAway of them everywhere else, because each one holds a queue.
+    // Where the player will feel it (a tuning of GAME_DESIGN 9). Each car is in a sight tier: on the player's route ahead going the
+    // same way, beside the route ahead (cross traffic, the oncoming lane, side roads), in the view cone, or far. Nothing counts nearer
+    // than spotMinM + spotMinS per m/s of the player's speed: a car that brakes in front of the player brakes over its own stopping
+    // distance too, so that much is room enough.
+    // Red runs: routeBoost beside the route, nearBoost elsewhere in the half of the street ahead, within spotM, and farShare beyond,
+    // up to redBoostMax. A run is a crossing, and cross traffic at the next junction is wide of any cone. Nearer than
+    // redFairM + redFairS per m/s + v^2 / redFairDecel, which is fairness rule 1 of the staged incidents, a run keeps the design's rate.
+    // Where a run is boosted, it also needs nearBolder less aggression.
+    // Overtakes and nose-ins: routeBolder less aggression needed on or beside the route, nearBolder in the cone or behind the player.
+    // Lane blockers: their clocks run at routeRate on the player's road, viewRate elsewhere in sight, blockerAway out of it. Out of
+    // sight a clock that has gone off waits farHoldS for the car to come into view before it acts anyway. Their caps count only the
+    // blockers ahead of the player and in reach, with a bubble-wide ceiling of the cap plus spotCapExtra.
+    spotM: 160,
+    spotMinM: 6,
+    spotMinS: 0.6,
+    spotDeg: 60,
+    redFairM: 3,
+    redFairS: 0.9,
+    redFairDecel: 28,
+    spotLatM: 14,
+    spotStepM: 10,
+    spotSameCos: 0.7,
+    spotBehindM: 25,
+    spotCapExtra: 2,
+    sightTicks: 6,
     blockerAway: 0.25,
-    nearM: 170,
+    routeRate: 4,
+    viewRate: 1.5,
+    farHoldS: 90,
+    farShare: 0.25,
     nearBoost: 3,
+    routeBoost: 4,
     nearBolder: 0.15,
+    routeBolder: 0.25,
     redBoostMax: 0.6,
 
     // Red runs (GAME_DESIGN 9).
