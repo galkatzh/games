@@ -47,22 +47,14 @@ test('item 1: 100 seeds give 7 errands ending in gan_pickup, with every guard he
     const plan = S.game._g.plan;
     assert.equal(plan.length, 7);
     assert.equal(new Set(plan).size, 7, 'no repeats');
-    assert.equal(plan[0], 'milk');
     assert.equal(plan[6], 'gan_pickup');
-    assert.equal(defOf(plan[1]).tier, 1);
-    assert.equal(defOf(plan[2]).tier, 2);
-    assert.equal(defOf(plan[3]).tier, 2);
-    assert.equal(defOf(plan[4]).tier, 3);
-    assert.equal(defOf(plan[5]).tier, 3);
+    for (let i = 0; i < 6; i++) assert.notEqual(defOf(plan[i]).tier, 'finale', `seed ${seed}: the finale only ends the day`);
     for (let i = 0; i < 7; i++) {
       const g = S.game;
       assert.notEqual(g.phase, 'RUN_END', `seed ${seed}: run ended on errand ${i}: ${g.endReason}`);
       assert.equal(g.errandIndex, i, `seed ${seed}: errand ${i} was skipped`);
       assert.ok(g.errand, 'bound');
       checkErrand(S, g.errand, g._g.from, seen);
-      if (i === 0) {
-        assert.equal(g.errand.poiId, TLV.anchors.resolve(W, defOf('milk').target.anchor, { type: 'poi' }).id, 'errand 1 is the pinned door');
-      }
       if (g.errand._noContest) noContestBay++;
       total++;
       kinds.set(g.errand.defId, (kinds.get(g.errand.defId) || 0) + 1);
@@ -76,6 +68,60 @@ test('item 1: 100 seeds give 7 errands ending in gan_pickup, with every guard he
   console.log(`errands: ${total} bound, ${noContestBay} on the plain fallback bay, by def ${JSON.stringify(Object.fromEntries(kinds))}`);
   assert.equal(total, 700);
   assert.equal(TLV.game.errands.defs().length, 12);
+});
+
+test('each game is its own day: any errand can come first, in any order, and the gan always ends it', () => {
+  const first = new Map();
+  const days = new Set();
+  const slots = Array.from({ length: 6 }, () => new Set());
+  const all = TLV.game.errands.defs().filter((d) => d.tier !== 'finale').map((d) => d.id);
+  for (let seed = 1; seed <= 200; seed++) {
+    const S = sim({ seed });
+    const plan = S.game._g.plan;
+    assert.equal(plan[6], 'gan_pickup');
+    first.set(plan[0], (first.get(plan[0]) || 0) + 1);
+    days.add(plan.join());
+    plan.slice(0, 6).forEach((id, i) => slots[i].add(id));
+  }
+  // Every day starts on King George, and only the errands with a door near the first leg's 450 m can open it: six of the eleven.
+  // The errand drawn first trades places with a later one that fits, so these share the first slot and none owns it.
+  const opened = JSON.stringify(Object.fromEntries(first));
+  assert.ok(first.size >= 5, `${first.size} errands open a day: ${opened}`);
+  assert.ok([...first.keys()].every((id) => all.includes(id)), opened);
+  assert.ok(Math.max(...first.values()) <= 60, `no errand owns the first slot: ${opened}`);
+  assert.ok(days.size >= 195, `${days.size} different days of 200`);
+  slots.forEach((seen, i) => assert.ok(i === 0 || seen.size >= 9, `slot ${i + 1} saw ${seen.size} errands`));
+  // A restart in the same game is a new day too, drawn on from the same stream.
+  const S = sim({ seed: 9 });
+  const before = S.game._g.plan.join();
+  TLV.game.flow.startRun(S);
+  assert.notEqual(S.game._g.plan.join(), before);
+});
+
+test('a pin is only taken when its route suits the leg: milk is not always the Carrefour', () => {
+  const pin = TLV.anchors.resolve(W, defOf('milk').target.anchor, { type: 'poi' }).id;
+  let pinnedFirst = 0;
+  let milkFirst = 0;
+  let milkLater = 0;
+  let pinnedLater = 0;
+  const leg = TLV.tune.game.legs;
+  for (let seed = 1; seed <= 400 && (milkFirst < 3 || milkLater < 6); seed++) {
+    const S = sim({ seed, errandDef: 'milk', errand: ((seed % 6) + 1) });
+    const e = S.game.errand;
+    if (!e || e.defId !== 'milk') continue;
+    if (S.game.errandIndex === 0) {
+      milkFirst++;
+      if (e.poiId === pin) pinnedFirst++;
+    } else {
+      milkLater++;
+      if (e.poiId === pin) pinnedLater++;
+    }
+    // From the spawn the Carrefour is about 575 m away: inside 30% of the 450 m first leg, outside it for the 850 and 950 m legs.
+    if (S.game.errandIndex >= 4) assert.notEqual(e.poiId, pin, `seed ${seed}: the pin on a ${leg[S.game.errandIndex]} m leg`);
+  }
+  assert.ok(milkFirst >= 3 && milkLater >= 6);
+  assert.equal(pinnedFirst, milkFirst, 'from the spawn the Carrefour suits the first leg, as the design measured');
+  assert.ok(pinnedLater < milkLater, 'later in the day milk goes wherever suits the leg');
 });
 
 test('a def forced by ?errandDef takes the first errand, and ?errand starts later', () => {
@@ -121,7 +167,7 @@ test('{poi}: Hebrew falls back to the English name then a kind label, English to
   assert.deepEqual(name(W, -1), { he: 'הגן', en: 'the gan' });
   assert.deepEqual(kinds.filter((p) => /[\u0590-\u05ff]/.test(name(W, p.id).en)).map((p) => p.nameEn), [], 'no target a reader of English cannot read');
   // And through a real binding.
-  const S = sim({ seed: 11 });
+  const S = sim({ seed: 11, errandDef: 'milk' });
   const e = S.game.errand;
   assert.equal(e.defId, 'milk');
   const again = sim({ seed: 12, errandDef: 'grandma_pills', errand: 2 }).game.errand;

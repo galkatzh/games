@@ -498,7 +498,7 @@ async function main() {
       assert.match(await text(page, '.hud-clock-digits'), /^\d:\d\d$/);
       assert.strictEqual(await text(page, '.hud-street'), 'HaMelekh George');
       assert.strictEqual(await text(page, '.hud-chain-mult'), 'x2.0');
-      assert.match(await text(page, '.hud-chip-text'), /Milk/);
+      assert.strictEqual(await text(page, '.hud-chip-text'), await page.evaluate(() => TLV.debug.current().game.errand.text.en), 'the chip shows the day\'s own first errand');
       assert.match(await text(page, '.hud-arrow-dist'), /^bay \d+ m$/);
       assert.ok(!/\d+ m\b/.test(await text(page, '.hud-chip')), 'one number for the road left: the arrow has it');
       await shot(page, 'drive');

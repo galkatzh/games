@@ -19,7 +19,7 @@ test('item 10: TITLE waits for start, then startRun, then CARD; driving is locke
   S.controls.start = false;
   assert.equal(S.game.phase, 'CARD');
   assert.equal(S.game.errandIndex, 0);
-  assert.equal(S.game.errand.defId, 'milk');
+  assert.equal(S.game.errand.defId, S.game._g.plan[0], 'errand 1 is the first of the day drawn');
   assert.equal(S.player.mode, 'LOCKED');
   until(S, (s) => s.game.phase === 'DRIVE', 4, 'DRIVE');
   assert.ok(Math.abs(S.game.phaseT) < 0.02);
@@ -37,7 +37,7 @@ test('item 10: ?notitle=1 delivers run.start and errand.start to a frame consume
   assert.ok(names.includes('run.start'), names.join());
   assert.ok(names.indexOf('run.start') < names.indexOf('errand.start'));
   assert.deepEqual(got[names.indexOf('run.start')][1], { seed: 1 });
-  assert.deepEqual(got[names.indexOf('errand.start')][1], { index: 0, defId: 'milk' });
+  assert.deepEqual(got[names.indexOf('errand.start')][1], { index: 0, defId: S.game._g.plan[0] });
 });
 
 test('item 10: startRun follows the binding order of ARCHITECTURE 12.7', () => {

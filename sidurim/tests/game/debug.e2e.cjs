@@ -38,7 +38,7 @@ async function main() {
       await toDrive();
       const s = await state();
       assert.strictEqual(s.phase, 'DRIVE');
-      assert.strictEqual(s.errandId, 'milk');
+      assert.strictEqual(s.errandId, await page.evaluate(() => TLV.debug.current().game._g.plan[0]));
       assert.ok(s.bayId >= 0);
       assert.strictEqual(s.clock <= 120 && s.clock > 100, true);
       assert.strictEqual(s.problems, 0);

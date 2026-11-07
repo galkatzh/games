@@ -19,8 +19,9 @@
     navMissedM: 5,
 
     // Clock (GAME_DESIGN 7). The design's numbers are 'normal'. 'relaxed' is a choice on the title card, and its scale is set against a
-    // lawful drive in real traffic, about 4.3 m/s with legs of 150-200 s: tests/game/lawful_day.test.mjs.
-    difficulty: { relaxed: { startS: 200, awardScale: 2.7 }, normal: { startS: 120, awardScale: 1.0 } },
+    // lawful drive in real traffic, about 3.9 m/s now that misbehaviour meets the player on the road ahead, with legs of 150-300 s:
+    // tests/game/lawful_day.test.mjs. Above about 3.1 a driver who dawdles at 3 m/s starts to win.
+    difficulty: { relaxed: { startS: 200, awardScale: 2.9 }, normal: { startS: 120, awardScale: 1.0 } },
     difficultyDefault: 'normal',
     awardDiv: 8,
     awardBase: 14,
@@ -65,6 +66,12 @@
     rung4MinM: 300,
     rung4MaxShare: 1.6,
     doorMinM: 220,
+    /** A stall whose centre is this near the player's car is the one it stands in, and is never the next errand's bay. One routed
+     * no further than searchM + bayStartPadM from where the leg starts is the bay only when nothing else is, so a leg starts in DRIVE. */
+    bayOwnM: 4,
+    /** A stall with a wall inside it, or this close to its side, is never a bay. */
+    bayWallClearM: 0.15,
+    bayStartPadM: 20,
     sensitiveM: 60,
     doorLaneReachM: 45,
     doorLanes: 4,

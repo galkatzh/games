@@ -8,7 +8,7 @@ const TLV = realTLV();
 const T = TLV.tune.game;
 
 test('the table holds the two difficulties, and normal is the design', () => {
-  assert.deepEqual(T.difficulty, { relaxed: { startS: 200, awardScale: 2.7 }, normal: { startS: 120, awardScale: 1.0 } });
+  assert.deepEqual(T.difficulty, { relaxed: { startS: 200, awardScale: 2.9 }, normal: { startS: 120, awardScale: 1.0 } });
 });
 
 test('the default is normal, and a run starts on its clock', () => {
@@ -26,7 +26,7 @@ test('?difficulty=relaxed reads through the config path, and starts the first ru
   assert.equal(S.game.difficulty, 'relaxed');
   assert.equal(S.game.clock, 200);
   const flat = (S.game.errand.routeLen / T.awardDiv + T.awardBase);
-  assert.ok(Math.abs(S.game.errand.award - flat * 2.7) < 1e-9, 'award scaled');
+  assert.ok(Math.abs(S.game.errand.award - flat * 2.9) < 1e-9, 'award scaled');
 });
 
 test('an unknown difficulty changes nothing, including one Object.prototype would answer to', () => {
@@ -60,7 +60,7 @@ test('a choice takes effect at the next startRun, not in the run under way', () 
   TLV.game.flow.startRun(S);
   assert.equal(S.game.difficulty, 'relaxed', 'the choice outlives the run');
   assert.equal(S.game.clock, 200);
-  assert.ok(Math.abs(S.game.errand.award - (S.game.errand.routeLen / T.awardDiv + T.awardBase) * 2.7) < 1e-9);
+  assert.ok(Math.abs(S.game.errand.award - (S.game.errand.routeLen / T.awardDiv + T.awardBase) * 2.9) < 1e-9);
   TLV.game.setDifficulty('normal');
   TLV.game.flow.startRun(S);
   assert.equal(S.game.clock, 120);

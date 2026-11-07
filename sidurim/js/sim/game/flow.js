@@ -10,7 +10,7 @@
   /** @returns {object} S.game._g: everything this package keeps between ticks that is nobody else's to read. */
   function newPrivate(S) {
     return {
-      plan: [], from: { x: 0, y: 0, h: 0 },
+      plan: [], from: { x: 0, y: 0, h: 0 }, held: -1,
       nav: TLV.game.nav._newState(),
       park: TLV.game.parking._newState(),
       dir: TLV.game.director._newState(),
@@ -197,7 +197,10 @@
     var index = o.errandIndex !== undefined ? o.errandIndex : S.params.errand - 1;
     index = Math.min(index, Math.max(0, g._g.plan.length - 1));
     var forced = o.defId !== undefined ? o.defId : S.params.errandDef;
-    if (forced && g._g.plan.length) g._g.plan[index] = forced;
+    if (forced && g._g.plan.length) {
+      g._g.plan[index] = forced;
+      g._g.held = index;
+    }
     flow._setPhase(S, 'CARD');
     // 9 and 10: setupErrand binds, stages and routes, then sends run.start and errand.start.
     if (S.world && setupErrand(S, index, true)) return;
@@ -514,7 +517,10 @@
     if (g.contest) TLV.game.rival._release(S, g.contest, true);
     g.contest = null;
     var at = index === undefined || index === null ? g.errandIndex : index;
-    if (defId) gg.plan[at] = defId;
+    if (defId) {
+      gg.plan[at] = defId;
+      gg.held = at;
+    }
     gg.from = { x: veh.x, y: veh.y, h: veh.h };
     return setupErrand(S, at);
   };

@@ -80,7 +80,9 @@
   }
 
   /**
-   * The seven definitions of a day: milk, then tiers 1, 2, 2, 3, 3, then the finale, with no repeats (GAME_DESIGN 6).
+   * The seven definitions of a day: six drawn by weight from every definition but the finale, in the order drawn, with no repeats,
+   * then the finale. Each game is its own day, so no errand is fixed to a slot and the tiers do not order them. A slot's leg and
+   * clock come from the slot, never from the errand (GAME_DESIGN 6).
    * @param {object} S Sim state.
    * @returns {string[]} Def ids, one per errand. Shorter only if the content has too few.
    */
@@ -92,15 +94,9 @@
     var finale = unused('finale', used)[0] || null;
     if (finale) used[finale.id] = true;
     for (var i = 0; i < T.tiers.length - 1; i++) {
-      var pick = i === 0 && byId.milk ? byId.milk : null;
-      if (!pick) {
-        var list = unused(T.tiers[i], used);
-        if (!list.length) {
-          list = defs.filter(function (d) { return d.tier !== 'finale' && !used[d.id]; });
-        }
-        if (!list.length) continue;
-        pick = draw(rng, list);
-      }
+      var list = defs.filter(function (d) { return d.tier !== 'finale' && !used[d.id]; });
+      if (!list.length) break;
+      var pick = draw(rng, list);
       used[pick.id] = true;
       out.push(pick.id);
     }
@@ -278,25 +274,29 @@
     return best;
   }
 
-  /** Rungs 1 to 4 for one definition. */
-  function ladder(S, def, from, leg) {
+  /** Rungs 1 to 4 for one definition. With `banded`, only rungs 1 to 3: a door within legWide of the leg, or none. */
+  function ladder(S, def, from, leg, banded) {
     var T = TLV.tune.game;
     var named = def.target.named || 'prefer';
     if (def.target.kinds === 'residential_door') {
       var gan = ganCandidates(S);
       return firstIn(S, gan, from, leg * (1 - T.legTight), leg * (1 + T.legTight)) ||
-        firstIn(S, gan, from, leg * (1 - T.legWide), leg * (1 + T.legWide)) || nearestTo(S, gan, from, leg);
+        firstIn(S, gan, from, leg * (1 - T.legWide), leg * (1 + T.legWide)) || (banded ? null : nearestTo(S, gan, from, leg));
     }
     var kinds = poiCandidates(S, def.target.kinds, named);
     var fall = poiCandidates(S, def.fallbackKinds || [], named);
     return firstIn(S, kinds, from, leg * (1 - T.legTight), leg * (1 + T.legTight)) ||
       firstIn(S, kinds, from, leg * (1 - T.legWide), leg * (1 + T.legWide)) ||
       firstIn(S, fall, from, leg * (1 - T.legWide), leg * (1 + T.legWide)) ||
-      nearestTo(S, kinds, from, leg) || nearestTo(S, fall, from, leg);
+      (banded ? null : nearestTo(S, kinds, from, leg) || nearestTo(S, fall, from, leg));
   }
 
-  /** A pinned definition, if its anchor resolves here to a door the content guards allow. */
-  function pinned(S, def, from) {
+  /**
+   * A pinned definition, if its anchor resolves here to a door the content guards allow, and its route is within legWide of the leg,
+   * the band rungs 2 and 3 accept. Any errand can fall on any slot, so a pin with no limit could be a 2 km leg or a 300 m one, and a
+   * looser band would send the pinned errand to the same door on most legs of the day.
+   */
+  function pinned(S, def, from, leg) {
     var anchor = def.target.anchor;
     if (!anchor) return null;
     var W = S.world;
@@ -308,7 +308,8 @@
     var door = poiDoor(W, res.id);
     if (TLV.math.dist(door.x, door.y, from.x, from.y) < T.doorMinM) return null;
     var found = doorRoute(S, from, door.x, door.y);
-    return found ? { door: door, found: found } : null;
+    if (!found || Math.abs(found.route.len - leg) > leg * T.legWide) return null;
+    return { door: door, found: found };
   }
 
   /**
@@ -453,7 +454,23 @@
     var def = byId[gg.plan[index]] || null;
     var from = gg.from;
     if (def) {
-      var hit = pinned(S, def, from) || ladder(S, def, from, leg);
+      var hit = pinned(S, def, from, leg) || ladder(S, def, from, leg, true);
+      // The day is drawn in any order, so an errand with no door in the band here trades places with a later one of the same day that
+      // has one. Without this, the first leg from the fixed spawn ran over 1.3 legs on 14 of 40 seeds, for scarce kinds like fuel.
+      // An errand forced onto its slot, by ?errandDef or setErrand, keeps it.
+      if (!hit && def.tier !== 'finale' && gg.held !== index) {
+        for (var j = index + 1; j < gg.plan.length; j++) {
+          var later = byId[gg.plan[j]];
+          if (!later || later.tier === 'finale') continue;
+          var fits = pinned(S, later, from, leg) || ladder(S, later, from, leg, true);
+          if (fits) {
+            gg.plan[j] = def.id;
+            gg.plan[index] = later.id;
+            return make(S, later, index, fits);
+          }
+        }
+      }
+      hit = hit || ladder(S, def, from, leg);
       if (hit) return make(S, def, index, hit);
     }
     // Rung 5: another unused definition of the tier, then of any tier. Never the finale's slot.

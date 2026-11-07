@@ -138,6 +138,37 @@
     return sample(door, field.s0, j === door.a ? 0 : door.len);
   }
 
+  var walled = typeof WeakMap === 'function' ? new WeakMap() : null;
+  var wallIds = new Int32Array(256);
+
+  /**
+   * @returns {boolean} True when a wall runs into a stall, or within bayWallClearM of its side. The map draws some walls and fences at
+   * the kerb, and a careful driver who does all the screen says scrapes them once the bay has armed (tests/ui/bay_line.test.mjs found one
+   * on a gan street). About 3% of stalls; cached per world.
+   */
+  function wallInStall(W, spot) {
+    var cache = walled ? walled.get(W) : null;
+    if (walled && !cache) walled.set(W, cache = new Map());
+    if (cache && cache.has(spot.id)) return cache.get(spot.id);
+    var T = TLV.tune.game;
+    var C = W.colliders;
+    var cx = Math.cos(spot.h);
+    var cy = Math.sin(spot.h);
+    var reach = spot.wid / 2 + T.bayWallClearM;
+    var n = TLV.world.spatial.collidersNear(W, spot.x, spot.y, spot.len / 2 + reach, wallIds);
+    var hit = false;
+    for (var i = 0; i < n && !hit; i++) {
+      var k = wallIds[i];
+      for (var f = -0.45; f <= 0.451 && !hit; f += 0.225) {
+        var px = spot.x + cx * spot.len * f;
+        var py = spot.y + cy * spot.len * f;
+        if (TLV.math.pointSegDist(px, py, C.ax[k], C.ay[k], C.bx[k], C.by[k]) < reach) hit = true;
+      }
+    }
+    if (cache) cache.set(spot.id, hit);
+    return hit;
+  }
+
   /** @returns {boolean} True when a stall may be a bay at all. */
   function bayFit(S, spot) {
     var W = S.world;
@@ -148,14 +179,42 @@
     if (spot.paint === PAINT.RED_WHITE || spot.paint === PAINT.RED_YELLOW) return false;
     if (TLV.world.parking.state(S, spot.id) === TLV.const.OCC.VEHICLE) return false;
     if (spot.laneS < T.bayLaneStartM) return false;
+    if (wallInStall(W, spot)) return false;
     return !TLV.world.spatial.sensitiveNear(W, spot.x, spot.y, T.sensitiveM);
   }
 
   parking._bayFit = bayFit;
   parking._curbSign = curbSign;
 
+  /**
+   * @returns {boolean} True for a stall too near where this leg starts to be its bay. The stall table only knows the city's cars, so the
+   * stall the player's own car stands in looks free. And a door route that loops round a one-way block can pass the start again on its
+   * way in, so the plain fallback finds stalls there. Either way the errand would start in SEARCH, as a door under doorMinM would
+   * (GAME_DESIGN 6): seed 300 with the README's errand drew the very stall it was parked in. A stall within bayOwnM of the car is never
+   * the bay. With `away`, nor is one whose route from the start is no longer than searchM + bayStartPadM: the leg would open in SEARCH.
+   * Only stalls that near as the crow flies are routed, which on most legs is none.
+   */
+  function nearStart(S, spot, away) {
+    var T = TLV.tune.game;
+    var veh = S.player && S.player.veh;
+    if (veh && TLV.math.dist(spot.x, spot.y, veh.x, veh.y) < T.bayOwnM) return true;
+    var from = S.game && S.game._g && S.game._g.from;
+    var short = T.searchM + T.bayStartPadM;
+    if (!away || !from || TLV.math.dist(spot.x, spot.y, from.x, from.y) > short) return false;
+    var way = TLV.world.routing.route(S.world, from.x, from.y, from.h, spot.laneId, spot.laneS, { ai: true });
+    return !way || way.len <= short;
+  }
+
   /** Chooses the bay. @returns {number} Stall id, or -1. Sets errand._noContest for the plain fallback. */
   function pickBay(S, e) {
+    var bay = pickBayAway(S, e, true);
+    if (bay >= 0) return bay;
+    e._noContest = false;
+    return pickBayAway(S, e, false);
+  }
+
+  /** pickBay, leaving out, with `away`, the stalls a leg would open in SEARCH for. */
+  function pickBayAway(S, e, away) {
     var W = S.world;
     var T = TLV.tune.game;
     var route = e._doorRoute;
@@ -172,7 +231,7 @@
     var good = [];
     for (var i = 0; i < ids.length; i++) {
       var spot = world.spot(W, ids[i]);
-      if (!bayFit(S, spot)) continue;
+      if (!bayFit(S, spot) || nearStart(S, spot, away)) continue;
       var d = stallDist(W, field, spot, proj);
       if (d > T.bayWideFarM || d < T.bayWideNearM) continue;
       // Rolling past needs a stall further on, so a bay with one comes first.
@@ -216,7 +275,7 @@
         if (seen[near[n]]) continue;
         seen[near[n]] = true;
         var sp = world.spot(W, near[n]);
-        if (bayFit(S, sp)) list.push({ id: sp.id, sp: sp, on: onRoute[W.lanes[sp.laneId].dirEdge] ? 0 : 1, d: TLV.math.dist(sp.x, sp.y, at.x, at.y) });
+        if (bayFit(S, sp) && !nearStart(S, sp, away)) list.push({ id: sp.id, sp: sp, on: onRoute[W.lanes[sp.laneId].dirEdge] ? 0 : 1, d: TLV.math.dist(sp.x, sp.y, at.x, at.y) });
       }
     }
     var pt = { x: 0, y: 0, h: 0 };

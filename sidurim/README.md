@@ -82,7 +82,7 @@ Add them to the address, for example `index.html?lang=he&quality=low`.
 | `notitle` | `1` | Skips the title card |
 
 Pick the difficulty on the title card, and the browser remembers it. RELAXED is the choice on a first visit: 200 s on the clock and
-2.7 times the time award per errand. NORMAL is 120 s and the plain award, the design's own table, and no script that keeps to the law
+2.9 times the time award per errand. NORMAL is 120 s and the plain award, the design's own table, and no script that keeps to the law
 has won a NORMAL day. `difficulty=normal` in the address opens the card on that choice, over the remembered one, and you can still
 change it there. With `notitle=1` it is simply the difficulty, and NORMAL is the default.
 
@@ -90,7 +90,9 @@ Every parameter is listed under [Development](#all-url-parameters).
 
 ## How the game goes
 
-A day is seven errands, and the last one is always the kindergarten pickup, the gan. A big 3D arrow points along the route.
+A day is seven errands, and the last one is always the kindergarten pickup, the gan. The other six are drawn at random for each
+game, in any order, from every errand there is, so no two days run alike. Restarting draws a new day too. A big 3D arrow points
+along the route.
 
 **The clock.** It runs down while you drive. You earn more by parking, not by arriving. It stops during cards, payouts and the
 knife encounter.
@@ -218,13 +220,15 @@ Add an object to the `ERRANDS` array in `content/tlv_center/errands.js`, above `
 },
 ```
 
-- `tier` is `1`, `2`, `3` or `'finale'`. A day draws two errands from each tier, then the finale. Leg length, clock and pay come from
-  global tables, never from the errand.
+- `tier` is `1`, `2`, `3` or `'finale'`. A day draws six errands by `weight` from all but the finale, in any order, then ends on the
+  finale. Leg length, clock and pay come from the slot, never from the errand. An errand with no door within 30% of its slot's leg
+  trades places with a later errand of the same day that has one. Only when none does is it sent to its nearest door. The tier only
+  decides which errand stands in when one cannot bind at all: another of the same tier first.
 - `target.kinds` are POI kinds, which `tools/rules/kinds.json` maps from OSM tags. `named` is `prefer`, `require` or `any`.
-  `anchor` pins an errand to one place. A pin closer than a leg's minimum distance is replaced: if its door stands under 220 m in a
-  straight line from where the leg starts (`doorMinM` in `js/sim/game/tune.js`), the errand takes another door of its kinds, as an
-  errand with no pin does. The same happens if the anchor resolves to nothing, if the place is not an eligible target, or if no route
-  reaches it.
+  `anchor` pins an errand to one place, but only on a leg it suits: its route must be within 30% of the leg (`legWide` in
+  `js/sim/game/tune.js`), and its door at least 220 m in a straight line from where the leg starts (`doorMinM`). Otherwise the errand
+  takes another door of its kinds, as an errand with no pin does. The same happens if the anchor resolves to nothing, if the place is
+  not an eligible target, or if no route reaches it. So `milk` goes to its Carrefour when it opens the day, and anywhere suitable later.
 - Pick a kind in `kindLabels` in `js/sim/game/tune.js`. Those are the labels shown for a shop with no name, and any other kind
   shows its raw id.
 - Text needs both languages. A business is named only through `{poi}`, which both languages must use or neither. A sentence holding
@@ -598,7 +602,7 @@ any other number counts as 1. An unknown parameter is ignored, and a repeated on
 | `notitle` | 0, 1 | 0 | Skips the title card | Warns, stays 0 |
 | `difficulty` | `relaxed`, `normal` | the title card's choice | Beats the remembered choice on the title card, where the player can still change it. It is not remembered. With `notitle=1` or a bot it is the difficulty, and `normal` is the default | Warns `TLV.game: ignoring`. The card opens on the remembered choice, and with no card the run is `normal` |
 | `errand` | 1-7 | 1 | Starts at this errand | Not a number: warns, 1. Out of range: clamped to 1-7. A fraction is cut to a whole number |
-| `errandDef` | id | none | Forces the definition of the errand the run starts on | No warning. An unknown id takes the first unused definition of that errand's tier that binds, so on errand 1 it is `milk` |
+| `errandDef` | id | none | Forces the definition of the errand the run starts on | No warning. An unknown id takes the first unused definition of that errand's tier that binds |
 | `spawn` | `x,y,h` | content | Overrides the spawn pose: metres, metres, radians | Not three numbers: warns, the content's spawn |
 | `clock` | seconds | difficulty | Starting clock | Not a number: warns, the difficulty's start. 0 or less: no warning, clamped to 0, and the run ends on `CLOCK` at once |
 | `heat` | 0-1 | computed | Forces the director's heat | Not a number: warns, computed. Out of range: clamped to 0-1 |
