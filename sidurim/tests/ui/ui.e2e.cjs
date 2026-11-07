@@ -289,7 +289,7 @@ async function main() {
       });
       assert.strictEqual(line.rows, 1, 'controls fit one line');
       assert.ok(line.right, 'controls do not overflow');
-      assert.strictEqual(line.cells, 10);
+      assert.strictEqual(line.cells, 11);
       await shot(page, 'title');
     });
   });
