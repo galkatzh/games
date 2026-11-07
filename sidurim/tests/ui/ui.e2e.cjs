@@ -1052,8 +1052,9 @@ async function main() {
   await scenario('parking view: at the shipped camera the words stay off the real car, before, while and after the rig comes in', async () => {
     const size = { width: 1280, height: 720 };
     const sides = new Set();
-    // Three streets. Seed 2's second errand arrives round a bend with the bay left of the car's line, so the words start on the right.
-    for (const [seed, errand] of [[1, 0], [2, 1], [2, 2]]) {
+    // Three streets. Seed 5's first errand has its bay on the left kerb, so the words start on the right. The days are random, so
+    // a new errand or a change to the draw moves these: tests/ui/ui.e2e.cjs only needs one bay on each side.
+    for (const [seed, errand] of [[1, 0], [5, 0], [2, 2]]) {
       await withGame(`?seed=${seed}&notitle=1&mute=1&traffic=0&peds=0&incidents=0&contest=off`, {}, async (page) => {
         assert.strictEqual(await page.evaluate(() => !!window.__standIn), false, 'the real renderer and the real car');
         await held(page);
@@ -1959,9 +1960,18 @@ async function main() {
   });
 
   await scenario('fixes: the bay tag stands past the box and never covers it, at every approach', async () => {
-    await withGame('?seed=2&notitle=1&mute=1&incidents=0&contest=off&traffic=0&peds=0&errand=2', { routes: cameraWith({ parkAhead: 4 }) }, async (page) => {
+    // The approaches were set on seed 2's dry cleaner and its bay. The days are random, so both are pinned: the errand by errandDef,
+    // and the stall by hand, because which stall the bay pick draws moves with everything drawn before it.
+    await withGame('?seed=2&notitle=1&mute=1&incidents=0&contest=off&traffic=0&peds=0&errand=2&errandDef=dry_cleaning', { routes: cameraWith({ parkAhead: 4 }) }, async (page) => {
       await held(page);
       await toPhase(page, 'DRIVE');
+      await page.evaluate(() => {
+        const S = TLV.app.S;
+        const spot = TLV.world.parking.spot(S.world, 6802433);
+        S.game.errand.bayId = spot.id;
+        TLV.game.nav.setTarget(S, spot.laneId, spot.laneS, spot.x, spot.y);
+      });
+      await step(page, 1);
       let seen = 0;
       for (const mode of ['parking', 'chase']) {
         await page.evaluate((m) => TLV.render.camera.setMode(m), mode);
@@ -2092,7 +2102,8 @@ async function main() {
   });
 
   await scenario('round 5: where the door is not in a clear line the HUD shows the way, and a runner who follows it arrives', async () => {
-    await withGame('?seed=130&notitle=1&mute=1&incidents=0&contest=force&knife=force&immortal=1&errand=3', {}, async (page) => {
+    // Seed 130's bakery: a door with a wall between it and the bay. The days are random, so the errand is pinned.
+    await withGame('?seed=130&notitle=1&mute=1&incidents=0&contest=force&knife=force&immortal=1&errand=3&errandDef=birthday_cake', {}, async (page) => {
       await held(page);
       await toPhase(page, 'DRIVE');
       await page.evaluate(() => {
@@ -2326,7 +2337,8 @@ async function main() {
   });
 
   await scenario('closeout: on the run both arrows point down the walk, and the door distance shows once', async () => {
-    await withGame('?seed=130&notitle=1&mute=1&incidents=0&contest=force&knife=force&immortal=1&errand=3', {}, async (page) => {
+    // Seed 130's bakery: a door with a wall between it and the bay. The days are random, so the errand is pinned.
+    await withGame('?seed=130&notitle=1&mute=1&incidents=0&contest=force&knife=force&immortal=1&errand=3&errandDef=birthday_cake', {}, async (page) => {
       await held(page);
       await toPhase(page, 'DRIVE');
       await page.evaluate(() => {
@@ -2454,7 +2466,8 @@ async function main() {
   });
 
   await scenario('closeout: the paused title has the middle of the frame: the encounter line waits and comes back', async () => {
-    await withGame('?seed=130&notitle=1&mute=1&incidents=0&contest=force&knife=force&immortal=1&errand=3', {}, async (page) => {
+    // Seed 130's bakery: a door with a wall between it and the bay. The days are random, so the errand is pinned.
+    await withGame('?seed=130&notitle=1&mute=1&incidents=0&contest=force&knife=force&immortal=1&errand=3&errandDef=birthday_cake', {}, async (page) => {
       await held(page);
       await toPhase(page, 'DRIVE');
       await page.evaluate(() => {
