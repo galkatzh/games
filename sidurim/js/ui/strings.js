@@ -35,6 +35,7 @@
       'controls.camera': 'bay camera',
       'controls.mirror': 'mirror',
       'controls.mute': 'mute',
+      'controls.radio': 'radio',
       'controls.pause': 'pause',
 
       'pause.title': 'PAUSED',
@@ -43,6 +44,10 @@
       'pause.resumePad': '[START] back to the balagan',
       'pause.soundOn': 'Sound on [M]',
       'pause.soundOff': 'Sound off [M]',
+      'radio.on': 'On the radio: {name}',
+      'radio.tuning': 'Radio: finding a station [N]',
+      'radio.off': 'Radio off [B]',
+      'radio.none': 'No station answers. The radio gives up [N]',
       'pause.credits': 'Credits [I]',
 
       'hud.noClaims': 'NO-CLAIMS',
@@ -221,6 +226,9 @@
       'credits.mapLine': 'Available under the',
       'credits.engine': 'Engine',
       'credits.art': 'Packed art',
+      'credits.sound': 'Recorded sound',
+      'credits.noSound': 'None in this build. Every sound is synthesized.',
+      'credits.radio': 'The radio streams live stations. They are not part of the game and are not stored.',
       'credits.noArt': 'None in this build. The game draws everything you see.',
       'credits.own': 'own work',
       'credits.unknown': 'no credit on record',
@@ -257,6 +265,7 @@
       'controls.camera': 'מצלמת חניה',
       'controls.mirror': 'מראה',
       'controls.mute': 'שקט',
+      'controls.radio': 'רדיו',
       'controls.pause': 'הפסקה',
 
       'pause.title': 'הפסקה',
@@ -265,6 +274,10 @@
       'pause.resumePad': '[START] חזרה לבלגן',
       'pause.soundOn': 'סאונד פועל [M]',
       'pause.soundOff': 'סאונד כבוי [M]',
+      'radio.on': 'ברדיו: {name}',
+      'radio.tuning': 'רדיו: מחפש תחנה [N]',
+      'radio.off': 'הרדיו כבוי [B]',
+      'radio.none': 'אף תחנה לא עונה. הרדיו מוותר [N]',
       'pause.credits': 'קרדיטים [I]',
 
       'hud.noClaims': 'ללא תביעות',
@@ -443,6 +456,9 @@
       'credits.mapLine': 'זמינים ברישיון',
       'credits.engine': 'מנוע',
       'credits.art': 'גרפיקה ארוזה',
+      'credits.sound': 'סאונד מוקלט',
+      'credits.noSound': 'אין במהדורה הזו. כל צליל מסונתז.',
+      'credits.radio': 'הרדיו משדר תחנות חיות. הן לא חלק מהמשחק ולא נשמרות.',
       'credits.noArt': 'אין במהדורה הזו. כל מה שרואים המשחק מצייר בעצמו.',
       'credits.own': 'יצירה מקורית',
       'credits.unknown': 'אין קרדיט רשום',
@@ -464,6 +480,7 @@
     { keys: ['C'], label: 'controls.camera' },
     { keys: ['V'], label: 'controls.mirror' },
     { keys: ['M'], label: 'controls.mute' },
+    { keys: ['N', 'B'], label: 'controls.radio' },
     { keys: ['ESC'], label: 'controls.pause' }
   ];
 
@@ -487,7 +504,7 @@
     osmUrl: 'www.openstreetmap.org/copyright',
     three: 'Three.js r159',
     threeLine: '© 2010-2023 Three.js Authors. MIT License',
-    licences: { cc0: 'CC0', 'cc-by-sa': 'CC BY-SA' }
+    licences: { cc0: 'CC0', 'cc-by-sa': 'CC BY-SA', 'cc-by-4.0': 'CC BY 4.0' }
   };
 
   var LRI = '⁦';

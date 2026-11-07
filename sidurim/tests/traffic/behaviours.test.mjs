@@ -58,7 +58,7 @@ test('RED_RUN: a commanded car enters on red, takes occupancy, and returns to CR
 });
 
 test('RED_RUN: ambient late run fires at the stop decision for an aggressive car, and a timid one stops', () => {
-  withTune({ redLateP: 1, redBoostMax: 1 }, () => {
+  withTune({ redLateP: 1, redBoostMax: 1, farShare: 1 }, () => {
     const lane = signalApproach(W);
     const S = quietSim({ seed: 3 });
     const conn = W.conns[lane.conns[0]];
@@ -78,7 +78,7 @@ test('RED_RUN: ambient late run fires at the stop decision for an aggressive car
 });
 
 test('RED_RUN: ambient jump start from the queue head just before green', () => {
-  withTune({ redJumpP: 1, redBoostMax: 1 }, () => {
+  withTune({ redJumpP: 1, redBoostMax: 1, farShare: 1 }, () => {
     const S = quietSim({ seed: 5 });
     const lane = signalApproach(W);
     const conn = W.conns[lane.conns[0]];
@@ -322,7 +322,7 @@ test('OVERTAKE: aborts when an oncoming car comes within 2 s', () => {
 });
 
 test('PHANTOM_STOP: fires by chance, brakes at 4-7 m/s2 with nothing ahead, holds, and resumes', () => {
-  withTune({ phantomRate: 6000, phantomMinS: 2, phantomMaxS: 2 }, () => {
+  withTune({ phantomRate: 6000, phantomMinS: 2, phantomMaxS: 2, farHoldS: 0 }, () => {
     const S = quietSim();
     const lane = findLane(W, (l) => l.len >= 150 && !l.stops.length);
     const veh = car(S, { laneId: lane.id, s: 30, v: 12, ag: 0.5 });
@@ -417,7 +417,7 @@ test('brake lights: none on a car backing up at speed, on a parked car, or on a 
 });
 
 test('PHANTOM_STOP: never within 15 m of a junction, on an exclusive lane, and capped at 2', () => {
-  withTune({ phantomRate: 6000 }, () => {
+  withTune({ phantomRate: 6000, farHoldS: 0 }, () => {
     const S = quietSim();
     const lane = findLane(W, (l) => l.len >= 150);
     const near = car(S, { laneId: lane.id, s: lane.len - 16, v: 6 });
@@ -708,4 +708,78 @@ test('PULL_OVER: the watchdog takes a stuck car in view off the lists at once, a
   assert.ok(veh.lights & VL.HAZARD);
   assert.equal(TLV.traffic.leadOn(S, lane.id, 0, lane.len), null, 'off the lane lists');
   runUntil(S, () => !veh.active || veh.id !== id, Q.pullOverMaxS * 2 + 1, 'leaving');
+});
+
+// ---- Where the player will feel it. ----------------------------------------------------------------------------------------
+
+/** A route stand-in along one lane, as S.game.nav would hold it. */
+function laneRoute(S, lane, s) {
+  S.game = { nav: { route: { px: lane.px, py: lane.py, cum: lane.cum, len: lane.len, dirEdges: [lane.dirEdge] }, s } };
+  S.traffic.sight = null;
+}
+
+test('sight: the player\'s road ahead, beside it, the cone, and nothing too close, behind or out of reach', () => {
+  const SIGHT = TLV.traffic.behaviours.SIGHT;
+  const sight = (S, veh) => {
+    S.traffic.sight = null;
+    return TLV.traffic.behaviours.sight(S, veh);
+  };
+  const S = quietSim({ seed: 4 });
+  const lane = findLane(W, (l) => twoWay(l) && bendOf(l) < 0.3);
+  const ahead = car(S, { laneId: lane.id, s: 100, v: 0, ag: 0.5 });
+  const close = car(S, { laneId: lane.id, s: 24.5, v: 0, ag: 0.5 });
+  const behind = car(S, { laneId: lane.id, s: 5, v: 0, ag: 0.5 });
+  const oncoming = car(S, { laneId: lane.opposite, s: W.lanes[lane.opposite].len - 100, v: 0, ag: 0.5 });
+  playerOn(S, lane.id, 20, 0);
+  assert.equal(sight(S, ahead), SIGHT.VIEW, 'ahead in the cone, with no route');
+  assert.equal(sight(S, close), SIGHT.FAR, 'inside the room the player needs');
+  assert.equal(sight(S, behind), SIGHT.FAR, 'behind the player');
+  laneRoute(S, lane, 20);
+  assert.equal(sight(S, ahead), SIGHT.ROUTE_SAME, 'on the route, going the player\'s way');
+  assert.equal(sight(S, oncoming), SIGHT.ROUTE_NEAR, 'beside the route, the other way');
+  parkPlayer(S, -2000, -2700);
+  assert.equal(sight(S, ahead), SIGHT.FAR, 'out of reach');
+});
+
+/** @returns {number} How far a lane turns, end to end, in radians. */
+function bendOf(lane) {
+  const n = lane.px.length - 1;
+  const h0 = Math.atan2(lane.py[1] - lane.py[0], lane.px[1] - lane.px[0]);
+  const h1 = Math.atan2(lane.py[n] - lane.py[n - 1], lane.px[n] - lane.px[n - 1]);
+  return Math.abs(TLV.math.wrapPi(h1 - h0));
+}
+
+test('PHANTOM_STOP: a clock gone off out of sight waits for the player, and acts in view at once', () => {
+  withTune({ phantomRate: 6000, farHoldS: 30 }, () => {
+    const S = quietSim({ seed: 6 });
+    const lane = findLane(W, (l) => l.len >= 200 && !l.stops.length && bendOf(l) < 0.2);
+    const veh = car(S, { laneId: lane.id, s: 40, v: 10, ag: 0.5 });
+    run(S, 120);
+    assert.notEqual(veh.beh, 'PHANTOM_STOP', 'nobody to see it');
+    playerOn(S, lane.id, 5, 0);
+    runUntil(S, () => veh.beh === 'PHANTOM_STOP', 2, 'the stop in view');
+  });
+});
+
+test('PHANTOM_STOP: out of sight it still happens, once farHoldS has passed', () => {
+  withTune({ phantomRate: 6000, farHoldS: 4 }, () => {
+    const S = quietSim({ seed: 6 });
+    const lane = findLane(W, (l) => l.len >= 250 && !l.stops.length);
+    const veh = car(S, { laneId: lane.id, s: 30, v: 10, ag: 0.5 });
+    runUntil(S, () => veh.beh === 'PHANTOM_STOP', 8, 'the late stop');
+  });
+});
+
+test('PHANTOM_STOP: blockers far away never hold the slots of one in front of the player', () => {
+  withTune({ phantomRate: 6000, farHoldS: 0 }, () => {
+    const S = quietSim({ seed: 2 });
+    const far = W.lanes.filter((l) => (l.flags & 1) && l.len > 120 && !l.stops.length).slice(0, 5).map((l) => car(S, { laneId: l.id, s: 30, v: 10 }));
+    run(S, 24);
+    assert.equal(far.filter((v) => v.beh === 'PHANTOM_STOP').length, Q.phantomMax, 'the cap holds out of sight');
+    const lane = findLane(W, (l) => l.len >= 200 && !l.stops.length && bendOf(l) < 0.2 && !far.some((v) => v.laneId === l.id), 3);
+    const mine = car(S, { laneId: lane.id, s: 60, v: 10, ag: 0.5 });
+    playerOn(S, lane.id, 20, 0);
+    runUntil(S, () => mine.beh === 'PHANTOM_STOP', 2, 'the stop in front of the player');
+    assert.ok(S.traffic.count.PHANTOM_STOP <= Q.phantomMax + Q.spotCapExtra);
+  });
 });

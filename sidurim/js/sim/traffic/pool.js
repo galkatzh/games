@@ -37,7 +37,7 @@
       // Neighbours for the contact net.
       near: new Int32Array(pool.NEAR), nearN: 0,
       // Behaviour.
-      duePhantom: 0.5, dueDouble: 0.5, dueDrop: 0.5,
+      duePhantom: 0.5, dueDouble: 0.5, dueDrop: 0.5, sight: 0,
       timer: 0, stage: 0, stopS: -1, capV: Infinity, forceA: NaN, aim: null, target: -1, capped: false, exempt: false,
       honkT: 0, honkAt: -1, hornT: 0, hornBoostT: 0, tailCool: 0, tailHornT: 0, busCool: 0, doorT: 0, spawnedPed: false,
       tailClosed: false, tailLost: 0, tailRoute: false,
@@ -169,6 +169,7 @@
     t.duePhantom = pool.nextDue(S.rng.traffic, Q.phantomRate);
     t.dueDouble = pool.nextDue(S.rng.traffic, Q.doubleRate);
     t.dueDrop = pool.nextDue(S.rng.traffic, Q.dropRate);
+    t.sight = 0;
     t.spotId = -1; t.spotPrior = 0; t.ctl = null; t.raceSpot = -1; t.raceStage = 0; t.raceFromCommit = false;
     t.sKind = 0; t.rejoinLane = -1; t.rejoinS = 0; t.towReason = 'script'; t.standoffDoor = 0; t.netN = 0;
     t.contactT = 0;

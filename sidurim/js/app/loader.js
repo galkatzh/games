@@ -4,7 +4,7 @@
 (function (TLV) {
   'use strict';
 
-  var INDEX_FILES = ['data/maps/index.js', 'content/index.js', 'data/assets/index.js'];
+  var INDEX_FILES = ['data/maps/index.js', 'content/index.js', 'data/assets/index.js', 'data/sounds/index.js'];
 
   /** Added here, not in index.html, whose contents ARCHITECTURE 4.1 fixes. Without it a phone lays the page out 980 wide and shrinks it. */
   function setViewport() {

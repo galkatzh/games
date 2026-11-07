@@ -1,10 +1,11 @@
 // tests/ui/ui.test.mjs — WP-UI
 // What can be proved without a browser: every string in both languages, the tone rules, the event table against ARCHITECTURE 11,
-// that no UI code assigns into the sim, and that no audio file ships.
+// that no UI code assigns into the sim, and that recordings ship only as packed data URIs.
 import assert from 'node:assert';
 import fs from 'node:fs';
 import path from 'node:path';
 import { test } from 'node:test';
+import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
 import { createTLV } from '../../tools/lib/classic.mjs';
 
@@ -64,7 +65,7 @@ test('the credits name what the licences ask for, in plain text and in both lang
   assert.match(CREDITS.osmUrl, /openstreetmap\.org\/copyright/);
   assert.match(CREDITS.three, /Three\.js/);
   assert.match(CREDITS.threeLine, /MIT/);
-  assert.deepStrictEqual(Object.keys(CREDITS.licences).sort(), ['cc-by-sa', 'cc0'], 'own work has words of its own, in each language');
+  assert.deepStrictEqual(Object.keys(CREDITS.licences).sort(), ['cc-by-4.0', 'cc-by-sa', 'cc0'], 'own work has words of its own, in each language');
   assert.ok(table.en['credits.own'] && table.he['credits.own']);
 });
 
@@ -332,7 +333,7 @@ test('the score hook the UI reads is pure', () => {
   assert.ok(/score\.rank = function \(money\)/.test(read('js/sim/game/score.js')));
 });
 
-test('no audio file ships, and nothing loads one', () => {
+test('recordings ship only as packed data URIs, and the only other sound the game loads is a live radio stream', () => {
   const found = [];
   const skip = new Set(['node_modules', 'cache', '.git']);
   const walk = (dir) => {
@@ -340,13 +341,34 @@ test('no audio file ships, and nothing loads one', () => {
       if (skip.has(f)) continue;
       const full = path.join(dir, f);
       if (fs.statSync(full).isDirectory()) walk(full);
-      else if (/\.(mp3|ogg|wav|flac|m4a|aac|opus|webm)$/i.test(f)) found.push(full);
+      else if (/\.(mp3|ogg|wav|flac|m4a|aac|opus|webm)$/i.test(f)) found.push(path.relative(ROOT, full));
     }
   };
   walk(ROOT);
-  assert.deepStrictEqual(found, []);
+  assert.deepStrictEqual(found.filter((f) => !f.startsWith(`assets_src${path.sep}sounds${path.sep}`)), [], 'originals stay in assets_src/sounds');
+
+  const scope = { TLV: {} };
+  vm.runInNewContext(read('data/sounds/index.js'), scope);
+  vm.runInNewContext(read('data/sounds/sounds.js'), scope);
+  const index = scope.TLV.soundIndex;
+  assert.strictEqual(index.src, 'data/sounds/sounds.js');
+  assert.deepStrictEqual(Object.keys(scope.TLV.sounds), Array.from(index.ids));
+  for (const [id, uri] of Object.entries(scope.TLV.sounds)) assert.match(uri, /^data:audio\/(mpeg|wav);base64,/, id);
+  for (const c of index.credits) {
+    assert.ok(c.author && c.title && c.license && /^https:\/\//.test(c.source), JSON.stringify(c));
+    assert.ok(['cc0', 'cc-by-4.0', 'cc-by-sa', 'own'].includes(c.license), c.license);
+  }
+  for (const id of ['car_a', 'car_b', 'car_hold', 'bus_toot', 'bus_double', 'bus_triple', 'bus_long']) assert.ok(index.ids.includes(id), id);
+
   const src = read('js/ui/audio.js');
-  assert.ok(!/new Audio\b|decodeAudioData|\.src\s*=/.test(src));
+  const assigned = [...src.matchAll(/(\w+)\.src\s*=\s*([^;]+);/g)].map((m) => `${m[1]}.src = ${m[2]}`);
+  assert.deepStrictEqual(assigned, ['script.src = index.src', 'el.src = st.url'], 'only the packed script and a radio station');
+  assert.ok(!/XMLHttpRequest|\bfetch\(\s*['"]/.test(src), 'no file is fetched by path');
+  const fetched = [...src.matchAll(/window\.fetch\(([^)]*)\)/g)].map((m) => m[1]);
+  assert.deepStrictEqual(fetched, ['RADIO_API[i++] + RADIO_QUERY']);
+  const stations = [...src.matchAll(/url: '([^']+)'/g)].map((m) => m[1]);
+  assert.ok(stations.length >= 10);
+  for (const url of stations) assert.match(url, /^https:\/\//, url);
 });
 
 test('storage is only touched inside try', () => {

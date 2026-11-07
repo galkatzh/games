@@ -46,14 +46,28 @@ The title card and the pause screen show the main keys. This table comes from `j
 | Pause | Esc or P | Start |
 | Credits, from the title or pause screen | I | |
 | Mute | M | |
+| Car radio: another station | N | |
+| Car radio: on or off, remembered | B | |
 
 On foot, W A S D or the arrows move you relative to the camera, and Space sidesteps. On a gamepad use the left stick and A.
 
 On the title card, Left and Right (or Up and Down, or 1 and 2) pick the difficulty, L switches between English and Hebrew,
 M mutes, and I opens the credits, as it does on the pause screen. To start the day, press Enter or almost any other key, click the
-start line, or press Start on a gamepad. Modifier and function keys do nothing there, and Esc, P, C and V do not start it either.
+start line, or press Start on a gamepad. Modifier and function keys do nothing there, and Esc, P, C, V, N and B do not start it either.
 
 At the end of a run, Enter or R starts another, or Start on a gamepad. Left and Right, or 1 and 2, change the difficulty first.
+
+### The car radio
+
+From the first key you press, the radio plays a live stream from a random Israeli station: Galgalatz, Galei Tzahal, Kan, 103FM, Eco 99
+and others built into `js/ui/audio.js`, joined at run time by the Israeli stations the public directory
+[radio-browser.info](https://www.radio-browser.info) lists over HTTPS. N tunes to another station at random, and B turns the radio off
+or on again, which the browser remembers. M mutes it with everything else, and pausing stops it. It comes back live, not where it
+stopped. It is quieter behind the menus, and quieter still once you are out of the car.
+
+A station that will not play is skipped for another, and after eight in a row the radio gives up until you press N or B. Some
+stations refuse listeners outside Israel. The streams come from the stations' own servers, so the radio needs a network connection.
+Without one it says so and stays quiet, and the game itself is unaffected. `radio=off` in the address keeps it off.
 
 ### URL parameters a player might want
 
@@ -64,6 +78,7 @@ Add them to the address, for example `index.html?lang=he&quality=low`.
 | `lang` | `en`, `he` | Language. Beats the last choice made with L, which the browser remembers |
 | `quality` | `auto`, `low`, `med`, `high` | Render quality. `auto`, the default, lowers the resolution while frames are slow. Try `low` on a weak GPU |
 | `mute` | `1` | Starts muted |
+| `radio` | `off` | No car radio. `on` forces it on, even in a browser driven by a test |
 | `notitle` | `1` | Skips the title card |
 
 Pick the difficulty on the title card, and the browser remembers it. RELAXED is the choice on a first visit: 200 s on the clock and
@@ -345,6 +360,27 @@ GLB never needs a browser.
 The tool exits 0, or 1 if it refused anything. It still packs everything else. `--root DIR` works on another tree. See
 [what the pack tool requires](#what-the-pack-tool-requires).
 
+### Pack sounds
+
+Recordings live in `assets_src/sounds/`, each original beside a sidecar that says where it came from and which spans to cut, in
+seconds of the original:
+
+```json
+{ "file": "car_horn.flac", "title": "Car Horn",
+  "source": "https://commons.wikimedia.org/wiki/File:Car_Horn.wav",
+  "changes": "cut into two clips and a loop, mono, peak-normalized, re-encoded",
+  "credit": { "author": "15HPanska_Ruttner_Jan", "license": "cc0", "date": "2019-02" },
+  "cuts": { "car_a": [0.515, 0.905] },
+  "loops": { "car_hold": [1.955, 2.085] } }
+```
+
+A cut is a one-shot, faded at both ends, peak-normalized and encoded as mono MP3. A loop is a held tone: the tool picks a length that
+lines the seam up on the wave, crossfades it, and keeps it as 16-bit PCM so MP3 padding cannot put a gap in it. Licences are `own`,
+`cc0`, `cc-by-4.0` and `cc-by-sa`. `changes` says what was done to the original, which CC BY asks for, and the credits view shows it.
+Run `node tools/pack_sounds.mjs`, which needs ffmpeg. It rewrites `data/sounds/sounds.js` and
+`data/sounds/index.js`. `js/ui/audio.js` knows the IDs `car_a`, `car_b`, `car_hold` and the four `bus_*` clips. Without one of them, that
+horn stays synthesized.
+
 ## Graphics sources
 
 The route for graphics is **OpenStreetMap plus Mapillary plus your own photos**. These notes were checked on 2026-11-02 against the
@@ -575,6 +611,7 @@ any other number counts as 1. An unknown parameter is ignored, and a repeated on
 | `knife` | `auto`, `off`, `force` | `auto` | Forces or forbids the knife tier | Warns, `auto` |
 | `quality` | `auto`, `low`, `med`, `high` | `auto` | Render quality. `auto` starts on `high`, or `low` on a software renderer, then steps the pixel ratio down to 0.6, and at the bottom drops shadows and draw range, while 2 s of frames average over 26 ms, and climbs back after 8 s of calm. The other three never change | Warns, `auto`. Case counts: `HIGH` is a bad value |
 | `mute` | 0, 1 | 0 | Mutes audio. A saved mute also applies | Warns, stays 0 |
+| `radio` | `auto`, `on`, `off` | `auto` | The car radio. `auto` plays it, except in a browser that reports itself driven by automation (`navigator.webdriver`), so no browser test reaches the network. B's saved choice also applies | Warns, `auto` |
 | `hud` | 0, 1 | 1 | Hides the HUD for clean screenshots | Warns, stays 1 |
 | `timescale` | number | 1 | Multiplies loop speed. Changes neither `DT` nor the sim's own slow motion | Not a number: warns, 1. 0 or less: clamped to 0.001, which all but stops the game |
 
@@ -583,12 +620,27 @@ any other number counts as 1. An unknown parameter is ignored, and a repeated on
 **Map data** © OpenStreetMap contributors, available under the Open Database License (ODbL 1.0). See
 <https://www.openstreetmap.org/copyright> and `data/maps/tlv_center/ATTRIBUTION.txt`, which gives the extract's timestamp. The attribution
 appears on the title and pause screens, and I opens the credits view from either: the attribution, the ODbL and its address, Three.js and
-its MIT licence, and the credit of every packed asset. It works offline and fetches nothing. `data/maps/*/map.js` is a derived database
+its MIT licence, the credit of every packed asset and every recorded sound. It works offline and fetches nothing. `data/maps/*/map.js` is a derived database
 and ships under the ODbL. So does `content/tlv_center/ayalon.js`, which `tools/ayalon.mjs` derives from the same extract and which
 carries the attribution in its header. In OSM's words: "If you alter or build upon our data, you may distribute the result only under
 the same license."
 
 **Three.js** r159, MIT licence, is vendored in `vendor/three.min.js`. The licence text is `vendor/three.LICENSE`.
+
+**Horn recordings.** Every horn you hear is cut from two recordings on Wikimedia Commons. The originals are in `assets_src/sounds/`,
+unchanged except that the WAV is stored as lossless FLAC, and each sidecar there names the cuts. `node tools/pack_sounds.mjs` (it
+needs ffmpeg) cuts, fades, peak-normalizes and encodes them into `data/sounds/sounds.js`, and writes their credits into
+`data/sounds/index.js` for the credits view:
+
+- [Car Horn](https://commons.wikimedia.org/wiki/File:Car_Horn.wav) by 15HPanska_Ruttner_Jan, from
+  [Freesound](https://freesound.org/people/15HPanska_Ruttner_Jan/sounds/461679/), CC0 (public domain dedication). Small cars, and the
+  player's own horn, which is a seamless loop of its steady tone.
+- [City bus MAN SG 220 horn](https://commons.wikimedia.org/wiki/File:WWS_CityBusMANSG220horn.ogg) by Work With Sounds / Technical
+  Museum of Slovenia, [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Cut into four clips and re-encoded. Buses and trucks
+  at its own pitch, and some cars pitched up into a car horn's range.
+
+**The car radio** plays the stations' own live streams. They are not part of the game, nothing of them is stored, and they belong to
+their broadcasters.
 
 The project has no licence for its own code yet.
 

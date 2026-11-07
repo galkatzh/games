@@ -84,6 +84,7 @@ function stubbed(dest, opts = {}) {
     'data/maps/index.js': `TLV.mapIndex = { default: 'stub', maps: { stub: { src: 'data/maps/stub/map.js', title: ${JSON.stringify({ he: STUB_TITLE_HE, en: 'Stub' })}, schema: [1, 0] } } };\n`,
     'data/maps/stub/map.js': mapScript(opts.schema || [1, 0]),
     'data/assets/index.js': 'TLV.assetIndex = {};\n',
+    'data/sounds/index.js': 'TLV.soundIndex = { src: \'data/sounds/sounds.js\', ids: [], credits: [] };\n',
     'content/tlv_center/world.js': "TLV.q.push(['spawn', { map: 'stub', anchor: null }]);\n",
     'content/tlv_center/errands.js': "TLV.q.push(['errand', { id: 'stub', tier: 1 }]);\n",
     'content/tlv_center/styles.js': "TLV.q.push(['style', { id: 'stub' }]);\n",
@@ -105,7 +106,7 @@ function stubbed(dest, opts = {}) {
  */
 function missingFiles(root) {
   const list = manifest(root);
-  const wanted = [...list.sim, ...list.browser, 'css/ui.css', 'data/maps/index.js', 'data/assets/index.js', 'data/maps/tlv_center/map.js',
+  const wanted = [...list.sim, ...list.browser, 'css/ui.css', 'data/maps/index.js', 'data/assets/index.js', 'data/sounds/index.js', 'data/maps/tlv_center/map.js',
     'content/tlv_center/world.js', 'content/tlv_center/errands.js'];
   return wanted.filter((f) => !fs.existsSync(path.join(root, f)));
 }
