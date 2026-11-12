@@ -7,7 +7,7 @@
   var beh = TLV.ns('traffic.behaviours');
 
   /** Pose scripts. */
-  var SK = { NONE: 0, COMMIT: 1, PULLOUT: 2, REJOIN: 3, STANDOFF: 4, TOW: 5, PULL_OVER: 6 };
+  var SK = { NONE: 0, COMMIT: 1, PULLOUT: 2, REJOIN: 3, STANDOFF: 4, TOW: 5, PULL_OVER: 6, WRONG_WAY: 7 };
   beh.SK = SK;
 
   /** PARK_RACE stages. */
@@ -1512,6 +1512,7 @@
     t.sDur = durS;
     t.sKind = kind;
     t.sDone = false;
+    t.obV = 0;
     veh.mode = 'SCRIPT';
     veh.connId = -1;
     veh.v = 0;
@@ -1826,7 +1827,9 @@
   beh.offPath = function (S, veh, dt) {
     var t = veh._t;
     var mode = veh.mode;
-    if (mode === 'SCRIPT' || mode === 'REJOIN') {
+    if (mode === 'SCRIPT' && t.sKind === SK.WRONG_WAY) {
+      wrongWayStep(S, veh, dt);
+    } else if (mode === 'SCRIPT' || mode === 'REJOIN') {
       scriptStep(S, veh, dt);
     } else if (mode === 'DYNAMIC') {
       dynamicStep(S, veh, dt);
@@ -1914,6 +1917,336 @@
     }
   };
 
+  // ---- Against a one-way lane. ------------------------------------------------------------------------------------------
+
+  /** WRONG_WAY stages: in nose first, nose to nose, out tail first, round into a street that leads to the junction, and nowhere to go. */
+  var WW = { ADVANCE: 0, FACE: 1, BACK: 2, TURN: 3, STUCK: 4 };
+  beh.WW = WW;
+
+  /** @returns {boolean} True when a body stands in the line a car is moving along, within reach, or will by the time it could stop. */
+  function bodyAhead(veh, o, ux, uy, reach) {
+    var t = veh._t;
+    var Q = TLV.tune.traffic;
+    var dx = o.x - veh.x;
+    var dy = o.y - veh.y;
+    var a = dx * ux + dy * uy;
+    if (a <= 0) return false;
+    var l = dy * ux - dx * uy;
+    if (l < 0) l = -l;
+    var oc = Math.cos(o.h);
+    var os = Math.sin(o.h);
+    var c = oc * ux + os * uy;
+    var sn = os * ux - oc * uy;
+    if (c < 0) c = -c;
+    if (sn < 0) sn = -sn;
+    var along = o.length / 2 * c + o.width / 2 * sn;
+    var across = o.length / 2 * sn + o.width / 2 * c;
+    if (l > t.halfW + across + Q.wrongWaySideM) return false;
+    var closing = -((o.vx || 0) * ux + (o.vy || 0) * uy);
+    if (closing < 0) closing = 0;
+    return a - t.halfL - along <= reach + closing * Q.wrongWayLagS;
+  }
+
+  /** @returns {boolean} True when a car, the player's or a person is in a wrong-way car's way. */
+  function wrongWayMet(S, veh, fwd, reach) {
+    var T = S.traffic;
+    var Q = TLV.tune.traffic;
+    var t = veh._t;
+    var ux = fwd ? t.cosH : -t.cosH;
+    var uy = fwd ? t.sinH : -t.sinH;
+    var list = S.vehicles;
+    for (var k = 0; k < t.nearN; k++) {
+      var o = list[t.near[k]];
+      if (!o.active || o.isPlayer || o === veh) continue;
+      if (bodyAhead(veh, o, ux, uy, reach)) return true;
+    }
+    var me = list[0];
+    if (me && me.active && bodyAhead(veh, me, ux, uy, reach)) return true;
+    var peds = TLV.peds;
+    if (!peds || !peds.pedsNear) return false;
+    var mid = t.halfL + reach / 2;
+    var n = peds.pedsNear(S, veh.x + ux * mid, veh.y + uy * mid, reach / 2 + t.halfW + 1, T.pedNear);
+    for (var i = 0; i < n; i++) {
+      var p = T.pedNear[i];
+      var dx = p.x - veh.x;
+      var dy = p.y - veh.y;
+      var a = dx * ux + dy * uy;
+      var l = dy * ux - dx * uy;
+      if (l < 0) l = -l;
+      if (a > 0 && a - t.halfL <= reach && l <= t.halfW + (p.r || 0) + Q.pedBodyClear) return true;
+    }
+    return false;
+  }
+
+  /** With nowhere to back into, it stands with its hazards on until nobody is looking, or not for long. */
+  function wrongWayStuck(S, veh) {
+    var t = veh._t;
+    var VL = TLV.const.VL;
+    t.stage = WW.STUCK;
+    t.timer = TLV.tune.traffic.wrongWayStuckS;
+    t.obV = 0;
+    veh.v = 0;
+    veh.vx = 0;
+    veh.vy = 0;
+    veh.lights = (veh.lights & ~(VL.HIGH_BEAM | VL.REVERSE)) | VL.HAZARD;
+  }
+
+  /**
+   * At the lane's end it backs across the junction into a street that leads to it, tail first, and so ends up facing the right way
+   * on a lane it may drive. The straightest such street is taken, and one with a queue at its line is left alone.
+   */
+  function wrongWayOut(S, veh) {
+    var W = S.world;
+    var T = S.traffic;
+    var Q = TLV.tune.traffic;
+    var t = veh._t;
+    var lane = W.lanes[t.wwLane];
+    var de = W.dirEdges[lane.dirEdge];
+    var j = W.juncs[de.to];
+    var travel = TLV.math.wrapPi(veh.h + Math.PI);
+    var best = -1;
+    var bestTurn = Q.wrongWayTurnDeg * Math.PI / 180;
+    for (var k = 0; j && k < j.inDir.length; k++) {
+      var side = W.dirEdges[j.inDir[k]];
+      if (!side || side.id === de.id || !side.aiRoutable) continue;
+      var sl = W.lanes[side.lanes[0]];
+      if (!(sl.flags & TLV.const.LF.AI_ROUTABLE) || (sl.flags & TLV.const.LF.EXCLUSIVE)) continue;
+      if (sl.len < Q.wrongWayBackInM + 2 * Q.wrongWayEndM || S.player.laneId === sl.id) continue;
+      if (TLV.traffic._behindOn(S, sl.id, sl.len + 1, Q.wrongWayBackInM + 2 * Q.wrongWayEndM)) continue;
+      TLV.world.lanes.pointAt(W, sl.id, sl.len - Q.wrongWayBackInM, T.at);
+      var turn = TLV.math.wrapPi(T.at.h + Math.PI - travel);
+      if (turn < 0) turn = -turn;
+      if (turn < bestTurn) {
+        bestTurn = turn;
+        best = sl.id;
+      }
+    }
+    if (best < 0) {
+      wrongWayStuck(S, veh);
+      return;
+    }
+    var to = W.lanes[best];
+    TLV.world.lanes.pointAt(W, best, to.len - Q.wrongWayBackInM, T.at);
+    t.px0 = veh.x;
+    t.py0 = veh.y;
+    t.ph0 = travel;
+    t.px1 = T.at.x;
+    t.py1 = T.at.y;
+    t.ph1 = TLV.math.wrapPi(T.at.h + Math.PI);
+    t.sDur = Math.max(Q.wrongWayTurnS, TLV.math.dist(veh.x, veh.y, T.at.x, T.at.y) / Q.reverseSpeed);
+    t.timer = 0;
+    t.wwBlockT = 0;
+    t.wwExit = best;
+    t.rejoinS = to.len - Q.wrongWayBackInM;
+    // The place it is backing into is taken from now, so nobody drives up into it.
+    t.obLane = best;
+    t.obS = t.rejoinS;
+    t.obLat = 0;
+    t.obV = 0;
+    t.stage = WW.TURN;
+  }
+
+  /** The arc out of the junction, tail first. The curve is the way it travels, so the body points the other way along it. */
+  function wrongWayTurn(S, veh, dt) {
+    var Q = TLV.tune.traffic;
+    var t = veh._t;
+    var u = (t.timer + dt) / t.sDur;
+    if (u > 1) u = 1;
+    var ax = t.px1 - t.px0;
+    var ay = t.py1 - t.py0;
+    var len = Math.sqrt(ax * ax + ay * ay);
+    var mx0 = Math.cos(t.ph0) * len;
+    var my0 = Math.sin(t.ph0) * len;
+    var mx1 = Math.cos(t.ph1) * len;
+    var my1 = Math.sin(t.ph1) * len;
+    var u2 = u * u;
+    var u3 = u2 * u;
+    var h00 = 2 * u3 - 3 * u2 + 1;
+    var h10 = u3 - 2 * u2 + u;
+    var h01 = 3 * u2 - 2 * u3;
+    var h11 = u3 - u2;
+    var nx = h00 * t.px0 + h10 * mx0 + h01 * t.px1 + h11 * mx1;
+    var ny = h00 * t.py0 + h10 * my0 + h01 * t.py1 + h11 * my1;
+    var h = veh.h;
+    if (u >= 1) {
+      h = TLV.math.wrapPi(t.ph1 + Math.PI);
+    } else {
+      var dp0 = 6 * u2 - 6 * u;
+      var dp1 = 3 * u2 - 4 * u + 1;
+      var dp2 = 3 * u2 - 2 * u;
+      var tx = dp0 * t.px0 + dp1 * mx0 - dp0 * t.px1 + dp2 * mx1;
+      var ty = dp0 * t.py0 + dp1 * my0 - dp0 * t.py1 + dp2 * my1;
+      if (tx * tx + ty * ty > 1e-6) h = Math.atan2(-ty, -tx);
+    }
+    var dx = nx - veh.x;
+    var dy = ny - veh.y;
+    if (personAt(S, veh, nx, ny) || playerAt(S, veh, nx, ny, h) || TLV.traffic.idm.wouldTouch(S, veh, dx, dy, TLV.math.wrapPi(h - veh.h))) {
+      veh.v = 0;
+      veh.vx = 0;
+      veh.vy = 0;
+      t.wwBlockT += dt;
+      if (t.wwBlockT > Q.wrongWayStuckS) wrongWayStuck(S, veh);
+      return;
+    }
+    t.timer += dt;
+    t.wwBlockT = 0;
+    veh.x = nx;
+    veh.y = ny;
+    veh.h = h;
+    TLV.traffic.idm.placeAxles(veh);
+    veh.vx = dx / dt;
+    veh.vy = dy / dt;
+    veh.v = -Math.sqrt(dx * dx + dy * dy) / dt;
+    if (u < 1) return;
+    // On a lane it may drive, facing the way it runs: an ordinary car again.
+    veh.mode = 'LANE';
+    veh.laneId = t.wwExit;
+    veh.connId = -1;
+    veh.s = t.rejoinS;
+    veh.lat = 0;
+    veh.v = 0;
+    veh.vx = 0;
+    veh.vy = 0;
+    t.sKind = SK.NONE;
+    t.sDone = true;
+    t.obLane = -1;
+    t.obV = 0;
+    t.wwLane = -1;
+    t.wwExit = -1;
+    t.pn = 0;
+    t.pg = 0;
+    t.backN = 0;
+    beh.toCruise(S, veh);
+    TLV.traffic.gate.extend(S, veh);
+  }
+
+  /**
+   * A car going the wrong way down a one-way lane, every tick. It is off the lanes' books: it reads the bodies in front of it itself,
+   * stops short of any of them, and stands on the lane's list as an obstacle coming the other way.
+   */
+  function wrongWayStep(S, veh, dt) {
+    var W = S.world;
+    var T = S.traffic;
+    var Q = TLV.tune.traffic;
+    var t = veh._t;
+    var VL = TLV.const.VL;
+    var lane = W.lanes[t.wwLane];
+    t.sT += dt;
+    if ((!lane || t.sT > Q.wrongWayMaxS) && t.stage !== WW.STUCK) wrongWayStuck(S, veh);
+    if (t.stage === WW.STUCK) {
+      t.timer -= dt;
+      if (t.timer <= 0 || !TLV.traffic.visibleToPlayer(S, veh.x, veh.y)) TLV.traffic.despawn(S, veh, 'watchdog');
+      return;
+    }
+    if (t.stage === WW.TURN) {
+      wrongWayTurn(S, veh, dt);
+      return;
+    }
+    if (t.stage === WW.FACE) {
+      // Nose to nose, lights up, on the horn: as far as this driver knows, the street is his.
+      t.timer -= dt;
+      honk(S, veh, true);
+      if (t.timer <= 0) {
+        t.stage = WW.BACK;
+        t.wwBlockT = 0;
+        veh.lights = (veh.lights & ~VL.HIGH_BEAM) | VL.REVERSE;
+      }
+      return;
+    }
+    var fwd = t.stage === WW.ADVANCE;
+    var v = veh.v < 0 ? -veh.v : veh.v;
+    var stopD = v * v / (2 * Q.wrongWayBrake);
+    var want = fwd ? Q.wrongWaySpeed : Q.wrongWayBackV;
+    if (fwd && t.aim) {
+      var left = t.aim.tImpact - S.t;
+      var far = TLV.math.dist(veh.x, veh.y, t.aim.x, t.aim.y);
+      if (left > 0.05) want = TLV.math.clamp(far / left, Q.wrongWayMinV, Q.wrongWaySpeed * Q.aimOverspeed);
+    }
+    var done = fwd ? (t.wwLeft <= stopD || t.wwS - Q.wrongWayEndM <= stopD) : lane.len - Q.wrongWayEndM - t.wwS <= stopD;
+    var met = wrongWayMet(S, veh, fwd, stopD + Q.wrongWayClear);
+    if (done || met) want = 0;
+    var d = want - v;
+    v += d > 0 ? Math.min(d, Q.wrongWayAccel * dt) : Math.max(d, -Q.wrongWayBrake * dt);
+    if (want === 0 && v < 0.05) v = 0;
+    var ds = v * dt;
+    if (ds > 0) {
+      var s = t.wwS + (fwd ? -ds : ds);
+      TLV.world.lanes.pointAt(W, lane.id, s, T.at);
+      var h = TLV.math.wrapPi(T.at.h + Math.PI);
+      var dx = T.at.x - veh.x;
+      var dy = T.at.y - veh.y;
+      if (personAt(S, veh, T.at.x, T.at.y) || playerAt(S, veh, T.at.x, T.at.y, h) ||
+        TLV.traffic.idm.wouldTouch(S, veh, dx, dy, TLV.math.wrapPi(h - veh.h))) {
+        v = 0;
+        met = true;
+      } else {
+        // wouldTouch and the people's check may both have written the scratch point, so the pose is read again.
+        TLV.world.lanes.pointAt(W, lane.id, s, T.at);
+        veh.x = T.at.x;
+        veh.y = T.at.y;
+        veh.h = h;
+        TLV.traffic.idm.placeAxles(veh);
+        t.wwS = s;
+        if (fwd) t.wwLeft -= ds;
+      }
+    }
+    veh.v = fwd ? v : -v;
+    veh.vx = veh.v * t.cosH;
+    veh.vy = veh.v * t.sinH;
+    t.obLane = lane.id;
+    t.obS = t.wwS;
+    t.obLat = 0;
+    t.obV = fwd ? -v : v;
+    if (v > 0) {
+      t.wwBlockT = 0;
+      return;
+    }
+    if (!done && !met) return;
+    t.wwBlockT += dt;
+    if (fwd) {
+      if (done || t.wwBlockT >= Q.wrongWayMetS) {
+        t.stage = WW.FACE;
+        honk(S, veh, true);
+        emit(S, 'bubble', { who: 'veh', id: veh.id, text: '#@!', ttl: 2 });
+      }
+    } else if (done) {
+      wrongWayOut(S, veh);
+    } else if (t.wwBlockT > Q.wrongWayStuckS) {
+      wrongWayStuck(S, veh);
+    }
+  }
+
+  /** The wrong-way command: a car on a one-way lane turns to face the traffic, and comes on. */
+  function cmdWrongWay(S, veh, cmd) {
+    var W = S.world;
+    var Q = TLV.tune.traffic;
+    var t = veh._t;
+    if (veh.mode !== 'LANE' || !freeToObey(veh) || t.lcTo >= 0) return false;
+    if (veh.kind === 'bus' || veh.kind === 'truck') return false;
+    var lane = W.lanes[veh.laneId];
+    if (!lane || lane.opposite >= 0 || lane.left >= 0 || lane.right >= 0) return false;
+    if (veh.s < Q.wrongWayEndM || veh.s > lane.len - Q.wrongWayEndM) return false;
+    clearState(veh);
+    var s = veh.s;
+    beh.script(S, veh, SK.WRONG_WAY, veh.x, veh.y, veh.h, 1);
+    t.wwLane = lane.id;
+    t.wwS = s;
+    t.wwLeft = cmd.distM > 0 ? cmd.distM : Q.wrongWayMaxM;
+    t.wwBlockT = 0;
+    t.wwExit = -1;
+    t.stage = WW.ADVANCE;
+    t.timer = cmd.holdS > 0 ? cmd.holdS : Q.wrongWayHoldS;
+    t.aim = cmd.aim || null;
+    t.obLat = 0;
+    veh.lat = 0;
+    veh.h = TLV.math.wrapPi(veh.h + Math.PI);
+    veh.ph = veh.h;
+    TLV.traffic.idm.placeAxles(veh);
+    veh.lights |= TLV.const.VL.HIGH_BEAM;
+    beh.set(S, veh, 'WRONG_WAY');
+    return true;
+  }
+
   // ---- Commands. --------------------------------------------------------------------------------------------------------
 
   function onPathNow(veh) {
@@ -1922,7 +2255,7 @@
 
   /** Commands that assume a free car cancel what it was doing, unless the state is one only the game can end. */
   function freeToObey(veh) {
-    return veh.beh !== 'TOWED' && veh.beh !== 'PULL_OVER' && veh.beh !== 'RIVAL_STANDOFF' && veh.mode !== 'WRECK' && veh.mode !== 'DYNAMIC';
+    return veh.beh !== 'TOWED' && veh.beh !== 'PULL_OVER' && veh.beh !== 'RIVAL_STANDOFF' && veh.beh !== 'WRONG_WAY' && veh.mode !== 'WRECK' && veh.mode !== 'DYNAMIC';
   }
 
   /** The red run command: the first signal ahead on the plan. */
@@ -2059,6 +2392,8 @@
         return cmdNoseIn(S, veh, cmd);
       case 'OVERTAKE':
         return cmdOvertake(S, veh, cmd);
+      case 'WRONG_WAY':
+        return cmdWrongWay(S, veh, cmd);
       case 'PHANTOM_STOP':
         if (veh.mode !== 'LANE' || !freeToObey(veh)) return false;
         startPhantom(S, veh, cmd.decel > 0 ? cmd.decel : Q.phantomBrakeMin, cmd.holdS > 0 ? cmd.holdS : Q.phantomMinS);

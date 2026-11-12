@@ -1,5 +1,5 @@
 // tests/game/incidents.test.mjs — WP-GAME
-// ARCHITECTURE 19 item 8: all 15 incidents stage on tlv_center through the fairness gate, and the brake-only bot avoids 95% of them.
+// ARCHITECTURE 19 item 8: all 17 incidents stage on tlv_center through the fairness gate, and the brake-only bot avoids 95% of them.
 // The soak's Fairness gate is the larger measure of the same thing. Here the director is real and traffic and people are too.
 import test from 'node:test';
 import { assert, realTLV, sim, step, until, toDrive, events } from './helpers.mjs';
@@ -9,17 +9,17 @@ const T = TLV.tune.game;
 
 const IDS = [
   'RED_RUNNER', 'BUS_PULLOUT', 'DOOR_ZONE', 'DROP_OFF', 'STOP_NO_REASON', 'ZEBRA_ROULETTE', 'SLOW_CROSS', 'RED_WALKER', 'SCOOTER_SALMON',
-  'DELIVERY_POP', 'TAILGATE', 'OVERTAKE_DIVE', 'MERGE_WEDGE', 'DOUBLE_PARK', 'REVERSE_FOR_SPOT'
+  'DELIVERY_POP', 'TAILGATE', 'OVERTAKE_DIVE', 'MERGE_WEDGE', 'DOUBLE_PARK', 'REVERSE_FOR_SPOT', 'WRONG_WAY_DRIVER', 'ROAD_STROLL'
 ];
 
-test('the 15 definitions, with the catalog\'s numbers', () => {
+test('the 17 definitions, with the catalog\'s numbers', () => {
   const defs = TLV.game.incidents.defs();
   assert.deepEqual(defs.map((d) => d.id).sort(), [...IDS].sort());
   const by = Object.fromEntries(defs.map((d) => [d.id, d]));
   // Owner's decision: OVERTAKE_DIVE is allowed in SEARCH on every errand, because a slow car hunting for a spot is exactly who gets dived
   // past, and on errand 1 once the three scripted beats are done, so it has no minHeat. It stays out of the beats themselves.
-  for (const id of ['DOOR_ZONE', 'DROP_OFF', 'STOP_NO_REASON', 'ZEBRA_ROULETTE', 'SLOW_CROSS', 'DOUBLE_PARK', 'REVERSE_FOR_SPOT', 'OVERTAKE_DIVE']) assert.equal(by[id].search, true, id);
-  for (const id of ['RED_RUNNER', 'BUS_PULLOUT', 'RED_WALKER', 'SCOOTER_SALMON', 'DELIVERY_POP', 'TAILGATE', 'MERGE_WEDGE']) assert.equal(by[id].search, false, id);
+  for (const id of ['DOOR_ZONE', 'DROP_OFF', 'STOP_NO_REASON', 'ZEBRA_ROULETTE', 'SLOW_CROSS', 'DOUBLE_PARK', 'REVERSE_FOR_SPOT', 'OVERTAKE_DIVE', 'ROAD_STROLL']) assert.equal(by[id].search, true, id);
+  for (const id of ['RED_RUNNER', 'BUS_PULLOUT', 'RED_WALKER', 'SCOOTER_SALMON', 'DELIVERY_POP', 'TAILGATE', 'MERGE_WEDGE', 'WRONG_WAY_DRIVER']) assert.equal(by[id].search, false, id);
   assert.equal(by.OVERTAKE_DIVE.minHeat, 0);
   assert.equal(by.REVERSE_FOR_SPOT.minHeat, 0.3);
   assert.equal(by.RED_WALKER.minHeat, 0.15);
@@ -31,7 +31,7 @@ test('the 15 definitions, with the catalog\'s numbers', () => {
   }
 });
 
-test('item 8: all 15 stage on tlv_center and pass the real fairness gate, on a car driving a real route', () => {
+test('item 8: all 17 stage on tlv_center and pass the real fairness gate, on a car driving a real route', () => {
   const staged = new Map();
   const gated = TLV.game.fairness.check;
   let passes = 0;
@@ -73,7 +73,7 @@ test('item 8: all 15 stage on tlv_center and pass the real fairness gate, on a c
     TLV.game.fairness.check = gated;
   }
   const missing = IDS.filter((id) => !staged.has(id));
-  console.log(`staged ${staged.size} of 15, ${passes} gate passes, by seed ${JSON.stringify(Object.fromEntries([...staged].map(([k, v]) => [k, v.seed])))}`);
+  console.log(`staged ${staged.size} of ${IDS.length}, ${passes} gate passes, by seed ${JSON.stringify(Object.fromEntries([...staged].map(([k, v]) => [k, v.seed])))}`);
   assert.deepEqual(missing, []);
 });
 

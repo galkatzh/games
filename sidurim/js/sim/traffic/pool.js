@@ -44,7 +44,9 @@
       passenger: false, doorKind: 0, gapS: 0, noseConn: -1, reverse: 0, reverseLeft: 0, ovLead: -1, ovMode: 0, ovLane: -1, ovAbort: false,
       ovSide: 0, ovFast: false, easeDown: false,
       // Off-path obstacles and scripts.
-      obLane: -1, obS: 0, obLat: 0,
+      obLane: -1, obS: 0, obLat: 0, obV: 0,
+      // Against a one-way lane (WRONG_WAY).
+      wwLane: -1, wwS: 0, wwLeft: 0, wwBlockT: 0, wwExit: -1,
       px0: 0, py0: 0, ph0: 0, px1: 0, py1: 0, ph1: 0, sT: 0, sDur: 0, sDone: false, vxD: 0, vyD: 0, spin: 0, dynT: 0,
       // Parking.
       spotId: -1, spotPrior: 0, ctl: null, raceSpot: -1, raceStage: 0, raceFromCommit: false,
@@ -164,7 +166,8 @@
     t.spawnedPed = false; t.passenger = false; t.doorKind = 0; t.gapS = 0; t.noseConn = -1; t.reverse = 0; t.reverseLeft = 0; t.ovLead = -1;
     t.ovMode = 0; t.ovLane = -1; t.ovAbort = false; t.ovSide = 0; t.ovFast = false; t.easeDown = false;
     t.tailClosed = false; t.tailLost = 0; t.tailRoute = false;
-    t.obLane = -1; t.obS = 0; t.obLat = 0;
+    t.obLane = -1; t.obS = 0; t.obLat = 0; t.obV = 0;
+    t.wwLane = -1; t.wwS = 0; t.wwLeft = 0; t.wwBlockT = 0; t.wwExit = -1;
     t.sT = 0; t.sDur = 0; t.sDone = false; t.vxD = 0; t.vyD = 0; t.spin = 0; t.dynT = 0;
     t.duePhantom = pool.nextDue(S.rng.traffic, Q.phantomRate);
     t.dueDouble = pool.nextDue(S.rng.traffic, Q.doubleRate);

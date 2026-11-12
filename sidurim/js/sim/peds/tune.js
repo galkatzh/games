@@ -205,7 +205,7 @@
     jayShifts: [0, 1.5, -1.5, 3, -3, 4.5, -4.5],
 
     // Strolling down the road (GAME_DESIGN 10).
-    strollP: 0.02,
+    strollP: 0.05,
     strollMinM: 14,
     strollMaxM: 34,
     /** Keeps this far inside the lane's edge. */
@@ -214,6 +214,9 @@
     strollWarnM: 15,
     asideSpeed: 0.5,
     strollSpeed: 0.8,
+    /** A staged stroller walks this far from the middle of the lane, and for at most this long. */
+    strollMidM: 0.35,
+    strollMaxS: 40,
 
     // Getting out of a car on the traffic side.
     /** A car slower than this may be the one someone just got out of. */

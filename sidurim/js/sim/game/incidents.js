@@ -1,5 +1,5 @@
 // js/sim/game/incidents.js — WP-GAME
-// The 15 staged incidents (GAME_DESIGN 11.1). The behaviours are TRAFFIC's and PEDS's. This file finds a place on the player's path,
+// The 17 staged incidents (GAME_DESIGN 11.1). The behaviours are TRAFFIC's and PEDS's. This file finds a place on the player's path,
 // casts an actor, keeps the aim on the player until commit, and judges how it ended. A place is searched first and an actor cast
 // only once the fairness gate has passed, so a refused incident leaves nothing behind.
 (function (TLV) {
@@ -27,7 +27,9 @@
     { id: 'OVERTAKE_DIVE', minHeat: 0, weight: 3, cooldownS: 15, anchor: 'leadCar', telegraph: { s: 1.0, cue: 'engine' }, tta: [2.0, 2.6], escape: 'brake', search: true, actors: [{ kind: 'car', command: 'OVERTAKE' }] },
     { id: 'MERGE_WEDGE', minHeat: 0, weight: 3, cooldownS: 30, anchor: 'sideStreet', telegraph: { s: 1.0, cue: 'noseCreeps' }, tta: [2.2, 3.0], escape: 'brake', search: false, actors: [{ kind: 'car', command: 'NOSE_IN' }] },
     { id: 'DOUBLE_PARK', minHeat: 0, weight: 3, cooldownS: 30, anchor: 'leadCar', telegraph: { s: 1.0, cue: 'hazards' }, tta: [3.0, 4.0], escape: 'brake', search: true, actors: [{ kind: 'car', command: 'DOUBLE_PARK' }] },
-    { id: 'REVERSE_FOR_SPOT', minHeat: 0.3, weight: 3, cooldownS: 30, anchor: 'leadCar', telegraph: { s: 1.0, cue: 'reverseLights' }, tta: [2.2, 3.0], escape: 'laneOrBrake', search: true, actors: [{ kind: 'car', command: 'REVERSE_FOR_SPOT' }] }
+    { id: 'REVERSE_FOR_SPOT', minHeat: 0.3, weight: 3, cooldownS: 30, anchor: 'leadCar', telegraph: { s: 1.0, cue: 'reverseLights' }, tta: [2.2, 3.0], escape: 'laneOrBrake', search: true, actors: [{ kind: 'car', command: 'REVERSE_FOR_SPOT' }] },
+    { id: 'WRONG_WAY_DRIVER', minHeat: 0.15, weight: 3, cooldownS: 30, anchor: 'smallOneWay', telegraph: { s: 1.2, cue: 'highBeams' }, tta: [3.0, 4.0], escape: 'brake', search: false, actors: [{ kind: 'car', command: 'WRONG_WAY' }] },
+    { id: 'ROAD_STROLL', minHeat: 0, weight: 3, cooldownS: 30, anchor: 'smallStreet', telegraph: { s: 1.2, cue: 'backTurned' }, tta: [3.5, 4.5], escape: 'brake', search: true, actors: [{ kind: 'walker', command: 'ROAD_STROLL' }] }
   ];
 
   /** Queues the shipped definitions. Called once by game.register, before the queue drains. */
@@ -296,6 +298,38 @@
     return null;
   }
 
+  /**
+   * A small one-way street ahead on the route: one lane with no neighbour, and room on it past the place for whoever is coming.
+   * @param {number} room Metres of lane wanted beyond the place.
+   * @param {number} tail The most lane there may be beyond that, or Infinity.
+   */
+  function atSmall(S, wantD, room, tail) {
+    var W = S.world;
+    var g = S.game;
+    var route = g.nav.route;
+    if (!route) return null;
+    var T = TLV.tune.game;
+    var LF = TLV.const.LF;
+    var at = g._g.pt;
+    for (var i = 0; i < route.dirEdges.length; i++) {
+      var de = W.dirEdges[route.dirEdges[i]];
+      var e = W.edges[de.edge];
+      if ((e.lanesF > 0 && e.lanesB > 0) || de.lanes.length !== 1) continue;
+      var lane = W.lanes[de.lanes[0]];
+      if (lane.left >= 0 || lane.right >= 0 || lane.opposite >= 0) continue;
+      if (!(lane.flags & LF.AI_ROUTABLE) || (lane.flags & LF.EXCLUSIVE) || lane.len < T.salmonMinLaneM) continue;
+      for (var s = T.salmonStepM; s + room < lane.len - T.smallEndM; s += T.salmonStepM) {
+        if (lane.len - T.smallEndM - s - room > tail) continue;
+        TLV.world.lanes.pointAt(W, lane.id, s, at);
+        var d = along(S, at.x, at.y, T.routeReachM);
+        if (d > 0 && Math.abs(d - wantD) <= T.salmonStepM) {
+          return { x: at.x, y: at.y, d: d, laneId: lane.id, s: s, blocking: false };
+        }
+      }
+    }
+    return null;
+  }
+
   /** The slot behind the player: the car already near his bumper, or a place out of his sight, or failing that whoever is on his tail. */
   function atTail(S) {
     var W = S.world;
@@ -387,7 +421,11 @@
     leadCar: atLead,
     oneWayEdge: atOneWay,
     tailSlot: atTail,
-    sideStreet: atSide
+    sideStreet: atSide,
+    // The driver coming the other way needs the road he covers before they meet, and not much more: he backs out over all of it.
+    // The walker needs a stretch to walk down.
+    smallOneWay: function (S, want, wantD) { return atSmall(S, wantD, TLV.tune.game.wrongWayV * want, TLV.tune.game.wrongWayTailM); },
+    smallStreet: function (S, want, wantD) { return atSmall(S, wantD, TLV.tune.game.strollRoomM, Infinity); }
   };
 
   /** The place of a crossing incident: each kind of person has its own kind of crossing. */
@@ -487,6 +525,19 @@
         veh = traffic.spawn(S, { laneId: side.id, s: back, v: T.actorV, ag: T.actorAg });
       }
       ok = !!veh && traffic.command(S, veh, { type: 'NOSE_IN', aim: aim });
+    } else if (type === 'WRONG_WAY') {
+      var one = W.lanes[place.laneId];
+      var start = Math.min(one.len - T.smallEndM, place.s + T.wrongWayV * inc._tta);
+      // Head-on in one lane, anybody already between them would be met first.
+      if (traffic.leadOn(S, one.id, Math.max(0, place.s - T.salmonClearM), start - place.s + 2 * T.salmonClearM)) return null;
+      var far = TLV.world.lanes.pointAt(W, one.id, start, {});
+      if (!noPop(S, far.x, far.y)) return null;
+      veh = traffic.spawn(S, { laneId: one.id, s: start, v: 0, kind: rng.bool(0.5) ? 'sedan' : 'hatch', ag: T.actorAg });
+      ok = !!veh && traffic.command(S, veh, { type: 'WRONG_WAY', aim: aim, holdS: stopFor(S, T.wrongWayHoldS), distM: start - place.s + T.wrongWayPastM });
+      if (veh && !ok) {
+        traffic.despawn(S, veh, 'script');
+        veh = null;
+      }
     } else if (type === 'TAILGATE') {
       veh = place.car || traffic.spawn(S, { laneId: place.laneId, s: place.s, v: S.player.veh.v + T.tailSpawnDv, ag: T.tailAg });
       ok = !!veh && traffic.command(S, veh, { type: 'TAILGATE', targetId: 0, durS: inc._tta });
@@ -518,6 +569,21 @@
         else peds.despawn(S, rider);
       }
       return out.length ? out : null;
+    }
+    if (type === 'ROAD_STROLL') {
+      var lane = S.world.lanes[place.laneId];
+      // A car already on this stretch has its own business with them.
+      if (TLV.traffic.leadOn(S, lane.id, Math.max(0, place.s - T.strollClearM), 2 * T.strollClearM)) return null;
+      var mid = TLV.world.lanes.pointAt(S.world, lane.id, place.s, {});
+      var off = lane.width / 2 - T.strollKerbM;
+      var kx = mid.x + Math.sin(mid.h) * off;
+      var ky = mid.y - Math.cos(mid.h) * off;
+      if (peds._bodyAt(S, kx, ky)) return null;
+      var w = peds.spawn(S, { kind: S.rng.event.bool(0.3) ? 'phone' : 'walker', x: kx, y: ky, h: mid.h, clear: true });
+      if (!w) return null;
+      if (peds.command(S, w, { type: 'ROAD_STROLL', laneId: lane.id, s: place.s, distM: T.strollRunM, dwellS: T.strollDwellS })) return [{ type: 'ped', id: w.id }];
+      peds.despawn(S, w);
+      return null;
     }
     var p = personAt(S, def.actors[0].kind, place.xing);
     if (!p) return null;

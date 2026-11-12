@@ -135,6 +135,11 @@
         var v = sys.near[i];
         if (v.laneId !== P.laneId && !(v.connId >= 0 && W.conns[v.connId].to === P.laneId)) continue;
         if (TLV.math.dist(v.x, v.y, p.x, p.y) > T.strollWarnM) continue;
+        // Someone told to take their time has heard the car, and is not done with the middle of the road yet.
+        if (P.strollHold > 0) {
+          P.strollHold -= dt;
+          break;
+        }
         P.aside = true;
         P.laneLatGoal = (P.laneLat >= 0 ? 1 : -1) * lane.width / 2;
         P.laneLeft = Math.min(P.laneLeft, T.strollSpeed * 3);
@@ -149,7 +154,7 @@
     var latStep = T.asideSpeed * dt;
     var want = P.laneLatGoal - P.laneLat;
     P.laneLat += want > latStep ? latStep : (want < -latStep ? -latStep : want);
-    if (P.plan === 'STROLL' && P.laneLeft <= 0) {
+    if (P.plan === 'STROLL' && (P.laneLeft <= 0 || P.laneT > T.strollMaxS)) {
       leaveLane(S, p);
       return;
     }
@@ -207,6 +212,49 @@
     P.laneT = 0;
     P.laneLeft = Infinity;
     P.restT = 0;
+    P.stage = 'WAIT';
+    P.mode = 'PATH';
+    P.waitT = 0;
+    P.gateT = 0;
+    TLV.peds.setState(p, 'WAIT_CROSS');
+    return true;
+  };
+
+  /**
+   * ROAD_STROLL: walks down a lane the way it runs, near the middle of it, and takes dwellS to notice the car behind.
+   * @param {object} S Sim state.
+   * @param {object} p Pedestrian.
+   * @param {object} cmd Command: laneId, s, distM, dwellS.
+   * @returns {boolean} False when this person cannot comply.
+   */
+  riders.stroll = function (S, p, cmd) {
+    var W = S.world;
+    var P = p._p;
+    var T = TLV.tune.peds;
+    var lane = W.lanes[cmd.laneId];
+    if (!lane || isRider(p)) return false;
+    var at = S.pedsys.pt;
+    var s = TLV.math.clamp(cmd.s, 0, lane.len);
+    TLV.world.lanes.pointAt(W, lane.id, s, at);
+    if (TLV.math.dist(p.x, p.y, at.x, at.y) > T.commandReachM) return false;
+    var run = cmd.distM > 0 ? cmd.distM : T.strollMaxM;
+    if (lane.len - s < 3) return false;
+    take(p, cmd);
+    P.aim = null;
+    P.hold = false;
+    P.path = null;
+    P.plan = 'STROLL';
+    P.laneId = lane.id;
+    P.laneS = s;
+    P.laneDir = 1;
+    // On the side they came from, so the way back to the kerb is the short one.
+    var side = (p.x - at.x) * -Math.sin(at.h) + (p.y - at.y) * Math.cos(at.h) >= 0 ? 1 : -1;
+    P.laneLat = side * Math.min(T.strollMidM, lane.width / 2 - T.strollEdgeM);
+    P.laneLatGoal = P.laneLat;
+    P.laneLeft = Math.min(run, lane.len - s - 1);
+    P.laneT = 0;
+    P.aside = false;
+    P.strollHold = cmd.dwellS > 0 ? cmd.dwellS : 0;
     P.stage = 'WAIT';
     P.mode = 'PATH';
     P.waitT = 0;

@@ -533,6 +533,83 @@ test('REVERSE_FOR_SPOT: stops short of a car behind it', () => {
   assert.ok(veh.s - veh.length / 2 - (behind.s + behind.length / 2) > 0.5);
 });
 
+const smallOneWay = (l) => lonely(l) && !l.stops.length && (l.flags & C.LF.AI_ROUTABLE) && !(l.flags & C.LF.EXCLUSIVE) &&
+  W.dirEdges[l.dirEdge].lanes.length === 1;
+
+test('WRONG_WAY: turns to face the traffic on a one-way lane, stops short of a car coming, then backs out the way it came', () => {
+  const S = quietSim();
+  const lane = findLane(W, smallOneWay);
+  const coming = car(S, { laneId: lane.id, s: 20, v: 0 });
+  coming._t.capV = 0;
+  const veh = car(S, { laneId: lane.id, s: lane.len - 15, v: 0, kind: 'sedan' });
+  run(S, 2);
+  const h = veh.h;
+  assert.equal(TLV.traffic.command(S, veh, { type: 'WRONG_WAY', holdS: 2 }), true);
+  assert.equal(veh.beh, 'WRONG_WAY');
+  assert.equal(veh.mode, 'SCRIPT');
+  assert.ok(veh.lights & VL.HIGH_BEAM, 'lights up');
+  assert.ok(Math.abs(TLV.math.wrapPi(veh.h - h)) > 3, 'it faces the traffic');
+  assert.equal(TLV.traffic.command(S, veh, { type: 'PHANTOM_STOP' }), false, 'and takes no other order while at it');
+  runUntil(S, () => veh.v > Q.wrongWaySpeed * 0.9, 6, 'coming on');
+  assert.ok(veh._t.wwS < lane.len - 15, 'against the lane');
+  assert.equal(veh._t.obLane, lane.id, 'the lane lists it');
+  assert.ok(veh._t.obV < -5, 'as a body coming the other way');
+  runUntil(S, () => veh._t.stage === TLV.traffic.behaviours.WW.FACE, 30, 'nose to nose');
+  const gap = TLV.math.obbGap(veh, coming);
+  assert.ok(gap > 1 && gap < 6, `stood ${gap.toFixed(1)} m short`);
+  assert.ok(events(S, 'traffic.honk', (e) => e.vehId === veh.id).length >= 1 || veh.horn, 'on the horn');
+  runUntil(S, () => veh._t.stage === TLV.traffic.behaviours.WW.BACK && veh.v < -1, 6, 'backing out');
+  assert.ok(veh.lights & VL.REVERSE);
+  assert.ok(!(veh.lights & VL.HIGH_BEAM));
+  const id = veh.id;
+  runUntil(S, () => !veh.active || veh.id !== id || veh.beh === 'CRUISE', 60, 'the end of it');
+  if (veh.active && veh.id === id) {
+    // Out of the junction tail first, into a street that leads to it: an ordinary car again, facing the way its lane runs.
+    assert.equal(veh.mode, 'LANE');
+    assert.notEqual(veh.laneId, lane.id);
+    const at = TLV.world.lanes.pointAt(W, veh.laneId, veh.s, {});
+    assert.ok(Math.abs(TLV.math.wrapPi(at.h - veh.h)) < 0.2, 'the right way round');
+    assert.ok(!(veh.lights & (VL.REVERSE | VL.HIGH_BEAM | VL.HAZARD)));
+    run(S, 240);
+    assert.ok(veh.v > 0.5 || veh.mode === 'CONN', 'and it drives on');
+  }
+});
+
+test('WRONG_WAY: only a car, and only where the street is one lane wide', () => {
+  const S = quietSim();
+  const wide = findLane(W, multiLane);
+  const a = car(S, { laneId: wide.id, s: 60, v: 0 });
+  assert.equal(TLV.traffic.command(S, a, { type: 'WRONG_WAY' }), false, 'a lane beside it');
+  const two = findLane(W, twoWay);
+  const b = car(S, { laneId: two.id, s: 60, v: 0 });
+  assert.equal(TLV.traffic.command(S, b, { type: 'WRONG_WAY' }), false, 'a two-way road');
+  const lane = findLane(W, smallOneWay);
+  const bus = car(S, { laneId: lane.id, s: 40, v: 0, kind: 'bus' });
+  if (bus) assert.equal(TLV.traffic.command(S, bus, { type: 'WRONG_WAY' }), false, 'a bus');
+});
+
+test('WRONG_WAY: stops for the player\'s car too, and with nobody in its way goes no further than it was told', () => {
+  const S = quietSim();
+  const lane = findLane(W, smallOneWay);
+  playerOn(S, lane.id, 20);
+  const veh = car(S, { laneId: lane.id, s: lane.len - 15, v: 0, kind: 'sedan' });
+  run(S, 2);
+  assert.equal(TLV.traffic.command(S, veh, { type: 'WRONG_WAY', holdS: 30 }), true);
+  const hits = [];
+  S.bus.on('player.contact', (c) => hits.push(c));
+  runUntil(S, () => veh._t.stage === TLV.traffic.behaviours.WW.FACE, 30, 'nose to nose with the player');
+  assert.ok(TLV.math.obbGap(veh, S.vehicles[0]) > 1, 'short of him');
+  assert.equal(hits.length, 0);
+
+  const Q2 = quietSim();
+  const far = car(Q2, { laneId: lane.id, s: lane.len - 15, v: 0, kind: 'sedan' });
+  run(Q2, 2);
+  const from = far.s;
+  TLV.traffic.command(Q2, far, { type: 'WRONG_WAY', distM: 20, holdS: 30 });
+  runUntil(Q2, () => far._t.stage === TLV.traffic.behaviours.WW.FACE, 20, 'the end of its run');
+  assert.ok(Math.abs(from - far._t.wwS - 20) < 2, `went ${(from - far._t.wwS).toFixed(1)} m`);
+});
+
 /** A materialized parked car on a stall with a clear lane. */
 function parkedCar(S) {
   const ids = [];

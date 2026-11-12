@@ -21,7 +21,7 @@
       waitT: 0, gateT: 0, intentTick: 0, redAt: -1, hopped: false, hurry: false, force: false, through: false, median: false, home: -1, homeX: 0, homeY: 0,
       pauseAt: -1, pauseT: 0, roadState: 'CROSS_LEGAL', slide: 0, dwellLeft: 0, slowV: 0,
       // On a lane.
-      laneId: -1, laneS: 0, laneDir: 1, laneLat: 0, laneLatGoal: 0, laneLeft: 0, laneT: 0, aside: false, restT: 0,
+      laneId: -1, laneS: 0, laneDir: 1, laneLat: 0, laneLatGoal: 0, laneLeft: 0, laneT: 0, aside: false, restT: 0, strollHold: 0,
       // Commanded.
       aim: null, hold: false, spot: -1, writeT: 0,
       // Timers and flags.

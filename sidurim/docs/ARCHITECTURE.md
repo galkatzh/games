@@ -1197,7 +1197,7 @@ Mode meanings:
 
 `'CRUISE','RED_RUN','TAILGATE','NOSE_IN','OVERTAKE_OUT','OVERTAKE_PASS','CUT_IN','PHANTOM_STOP',`
 `'DROP_APPROACH','DROPPED','PULLOUT','BUS_APPROACH','BUS_STOPPED','BUS_PULLOUT','DOUBLE_PARK','REVERSE_FOR_SPOT',`
-`'DOOR_OPEN','PARK_RACE','PARK_HOLD','RIVAL_BLOCK','RIVAL_STANDOFF','TOWED','PULL_OVER'`
+`'DOOR_OPEN','PARK_RACE','PARK_HOLD','RIVAL_BLOCK','RIVAL_STANDOFF','TOWED','PULL_OVER','WRONG_WAY'`
 
 `TLV.const.BEHAVIOURS` lists them. Each except `CRUISE` must have a timeout that returns to `CRUISE` or despawns. `HONK` in
 GAME_DESIGN 9 is an action any car can take, not an FSM state: it sets `Vehicle.horn` and emits `traffic.honk`.
@@ -2147,6 +2147,7 @@ aim.y)` at `aim.tImpact`, clamped to `[0, 1.3 * lane vmax]`. Every `holdS` is su
 | `DROP_OFF` | `holdS`, `door: 'traffic'\|'curb'`, `passenger: bool` | Pull half to curb, hazards, door, spawn via `TLV.peds.spawn` |
 | `DOUBLE_PARK` | `holdS` | Stop, hazards, driver gone |
 | `REVERSE_FOR_SPOT` | `distM`, `aim?` | Reverse down the lane |
+| `WRONG_WAY` | `aim?`, `distM?`, `holdS?` | A car on a one-lane one-way lane turns to face the traffic and drives against it, as a pose script listed on the lane as an oncoming obstacle. It stops short of any body, stands `holdS`, backs out to the lane's end, then backs across the junction into a street leading to it and is a `CRUISE` car again. With nowhere to back into it stands with hazards and despawns |
 | `BUS_PULLOUT` | `aim?` | Leave stop with no blinker |
 | `DOOR_OPEN` | `side: 'traffic'\|'curb'`, `holdS` | Requires a `PARKED` vehicle from `materializeParked`. The door adds a 1.0 x 0.2 m box, centred in the vehicle frame at `(+0.25 * length, ±(width/2 + 0.5))`, long axis lateral. `TLV.collide` treats it as part of the vehicle |
 | `PULLOUT` | | Requires a `PARKED` vehicle from `materializeParked`. Signals and leaves through `NOSE_IN`. The spot becomes `FREE` once the body is clear |
@@ -2168,6 +2169,7 @@ aim.y)` at `aim.tImpact`, clamped to `[0, 1.3 * lane vmax]`. Every `holdS` is su
 | `JAYWALK` | `x`, `y`, `toX`, `toY`, `aim?` | Mid-block crossing |
 | `SCOOTER_SALMON` | `laneId`, `s`, `aim?` | Rides against a one-way lane |
 | `DELIVERY_POP` | `xingId`, `aim?` | Rider leaves sidewalk into road at 6-9 m/s |
+| `ROAD_STROLL` | `laneId`, `s`, `distM?`, `dwellS?` | Walks `distM` down the lane the way it runs, near its middle, at 0.8 m/s. A car on the lane within 15 m is ignored for `dwellS`, then they move aside slowly and leave |
 | `SAVE_BAY` | `spotId` | Stands in the bay, gestures, leaves when the bay is taken. Stays in `S.peds` as `kind: 'saver'` |
 | `INSPECT` | `x`, `y` | Inspector walks to the point, writes, leaves |
 | `CANCEL` | | Back to `WALK` |
@@ -2182,7 +2184,7 @@ Weighted walk and spawn weight by class: primary 5, secondary 4, tertiary 3, unc
 ```js
 TLV.q.push(['incident', {
   id: 'BUS_PULLOUT', minHeat: 0, weight: 3, cooldownS: 30,
-  anchor: 'busStop',     // 'junction'|'busStop'|'parkedCar'|'leadCar'|'crossing'|'oneWayEdge'|'tailSlot'|'sideStreet'
+  anchor: 'busStop',     // 'junction'|'busStop'|'parkedCar'|'leadCar'|'crossing'|'oneWayEdge'|'tailSlot'|'sideStreet'|'smallOneWay'|'smallStreet'
   telegraph: { s: 1.2, cue: 'noseOut' },
   tta: [2.2, 3.2],
   escape: 'laneOrBrake', // 'brake'|'laneOrBrake'|'none'
@@ -2191,7 +2193,7 @@ TLV.q.push(['incident', {
 }]);
 ```
 
-The 15 shipped definitions live in `js/sim/game/incidents.js` (they are code-adjacent) and are pushed in `TLV.game.register()`.
+The 17 shipped definitions live in `js/sim/game/incidents.js` (they are code-adjacent) and are pushed in `TLV.game.register()`.
 
 ---
 
@@ -2737,7 +2739,7 @@ BRIEF tone rules, and a final report lists anything decided under the "missing c
 6. `knife.test.mjs`: every stage in order; `DRAGGED` at 2.5 s; `lead = 9 - 3t`; all four exits reachable from scripted input;
    attacker 5.7 or 6.6 m/s; clock frozen; controls locked, so `player.hitPed` cannot fire in `STANDOFF` or `DOOR_TUG`.
 7. Pedestrian hit: all penalties; second ends the run; hitting the attacker gives no benefit by any path.
-8. All 15 incidents stage on `tlv_center` and pass the fairness gate; `braker` meets 95%.
+8. All 17 incidents stage on `tlv_center` and pass the fairness gate; `braker` meets 95%.
 9. All `TLV.debug` hooks in 16.2 work from `page.evaluate`.
 10. All run-end reasons are reachable, and restart works. `startRun` follows the order in 12.7, and `?notitle=1` delivers
     `run.start` to a frame consumer.

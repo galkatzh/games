@@ -873,6 +873,8 @@
         return TLV.peds.riders.salmon(S, p, cmd);
       case 'DELIVERY_POP':
         return TLV.peds.riders.pop(S, p, cmd);
+      case 'ROAD_STROLL':
+        return TLV.peds.riders.stroll(S, p, cmd);
       case 'SAVE_BAY': {
         var spot = TLV.world.parking.spot(S.world, cmd.spotId);
         if (!spot) return false;
@@ -942,7 +944,7 @@
   }
 
   /**
-   * On a living street or service road, 2% of walkers take to the road edge (GAME_DESIGN 10).
+   * On a living street, a service road or a one-lane one-way street, 5% of walkers take to the road edge (GAME_DESIGN 10).
    * @param {object} S Sim state.
    * @param {object} p Pedestrian on a row.
    * @returns {boolean} True when they have.
@@ -950,7 +952,9 @@
   peds.maybeStroll = function (S, p) {
     var P = p._p;
     if (P.job !== 'AMBIENT' || p.state !== 'WALK' || (p.kind !== 'walker' && p.kind !== 'phone')) return false;
-    if (S.world.edges[S.world.sidewalks[P.sw].edge].cls < TLV.const.ROAD.LIVING) return false;
+    var e = S.world.edges[S.world.sidewalks[P.sw].edge];
+    var small = e.cls === TLV.const.ROAD.RESIDENTIAL && e.lanesF + e.lanesB === 1;
+    if (e.cls < TLV.const.ROAD.LIVING && !small) return false;
     return S.rng.ped.bool(TLV.tune.peds.strollP) && TLV.peds.cross.tryStroll(S, p);
   };
 

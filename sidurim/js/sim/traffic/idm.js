@@ -220,7 +220,7 @@
         add(T, T.nL + veh.connId, veh.s, t.halfL, veh.v, veh.lat, t.halfW, slot);
         addTrail(T, veh, t);
       } else if (t.obLane >= 0) {
-        add(T, t.obLane, t.obS, t.halfL, 0, t.obLat, t.halfW, slot);
+        add(T, t.obLane, t.obS, t.halfL, t.obV, t.obLat, t.halfW, slot);
       }
     }
     addPlayer(S);

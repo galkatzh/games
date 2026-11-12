@@ -337,6 +337,7 @@ on the player's path (section 11). Concurrency caps apply to ambient only.
 | `BUS_STOPPED`, `BUS_PULLOUT` | "aggressively joining" | Every bus at each stop on its lane | Stops 10-15 s half out of lane, then noses out with no blinker | 4% of spawned cars are buses |
 | `DOUBLE_PARK` | "stop for unclear reasons" | 0.01 per car per minute | Hazards on, driver gone, blocks the lane 20-40 s, subject to the no-bypass cap below | Same guards as `PHANTOM_STOP`. Max 2 |
 | `REVERSE_FOR_SPOT` | "very aggressively" | Staged only | Reverses 30 m down a live lane, reverse lights on | Guarded by fairness gate |
+| `WRONG_WAY` | "against the driving direction in small one way streets" | Staged only | Drives against a one-lane one-way street with high beams, stops nose to nose with whoever it meets, honks for 3 s, then backs out tail first and drives off | Cars only. Stops short of every body. Ends inside 40 s |
 | `DOOR_OPEN` | Flavour | Staged only | A parked car's traffic-side door opens into the lane | 2-3 s |
 
 **Rules that override everything:**
@@ -364,7 +365,7 @@ are sparse [M, about 12% of ways].
 | `CROSS_SLOW` | "walk slowly" | 12% of crossers | Crosses at 0.6 m/s and may pause mid-road 1-3 s | Dwell capped at 25 s, then hurries off |
 | `JAYWALK` | "cross the road unexpectedly" | 3% per minute per walker near a road | Leaves the sidewalk mid-block | Ambient walkers hop back if car TTC falls under 1 s |
 | `RED_CROSS` | "cross on red lights" | 15% of waiters, or after 25 s | Crosses against the signal | Same guards |
-| `STROLL_ROAD` | "etc." | 2% of walkers on `living_street` or service roads | Walks down the road edge | Moves aside slowly |
+| `STROLL_ROAD` | "pedestrians walking slowly on the road" | 5% of walkers on `living_street`, service roads and one-lane one-way residential streets, and staged as `ROAD_STROLL` | Walks down the road edge at 0.8 m/s. Staged: down the middle of the lane, back to the traffic | Moves aside slowly. Staged: only 3 s after a car comes up behind |
 | `DROPPED` | "dropping passengers off" | Spawned by `DROPPED` car | Gets out on the traffic side, walks to curb | |
 | `FLEE` | | Near a crash | Hurries away 3 s | |
 | `STUMBLE` | | After being hit | Sits, stands, shakes head | Non-graphic, 4 s, then leaves |
@@ -435,6 +436,8 @@ Soak test: a headless brake-only bot must avoid at least 95% of staged incidents
 | `MERGE_WEDGE` | `NOSE_IN` | side street | Nose creeps, accepts a 4 m gap | 2.2-3.0 | 0 | no |
 | `DOUBLE_PARK` | `DOUBLE_PARK` | lead car | Hazards, driver gone | 3.0+ | 0 | yes |
 | `REVERSE_FOR_SPOT` | `REVERSE_FOR_SPOT` | lead car | Reverse lights, 30 m backwards | 2.2-3.0 | 0.3 | yes |
+| `WRONG_WAY_DRIVER` | `WRONG_WAY` | small one-way street | High beams coming the wrong way, then the horn | 3.0-4.0 | 0.15 | no |
+| `ROAD_STROLL` | `STROLL_ROAD` | small one-way street | Walker steps off the kerb and strolls down the lane, back turned | 3.5-4.5 | 0 | yes |
 
 Each incident also has a `cooldownS` of 30 and a selection `weight` of 3 by default.
 
@@ -806,7 +809,7 @@ ARCHITECTURE section 17.
 | 16 | "pedestrians try to cross the road unexpectedly" | `JAYWALK`, `ZEBRA_ROULETTE` | Scenario forces each; intent flag precedes stepping out by at least 0.8 s |
 | 17 | "walk slowly" | `CROSS_SLOW`, `SLOW_CROSS` | Crossing speed 0.6 m/s; zone dwell at most 25 s |
 | 18 | "cross on red lights" | `RED_CROSS`, `RED_WALKER` | Pedestrian on road while signal shows no walk phase |
-| 19 | "etc." | `STROLL_ROAD`, scooters, delivery riders, decoy savers | Scenarios for `SCOOTER_SALMON` and `DELIVERY_POP` |
+| 19 | "etc." | `STROLL_ROAD`, `ROAD_STROLL`, `WRONG_WAY_DRIVER`, scooters, delivery riders, decoy savers | Scenarios for `SCOOTER_SALMON`, `DELIVERY_POP`, `WRONG_WAY` and `ROAD_STROLL` |
 | 20 | "Cars may also suddenly stop for unclear reasons" | `PHANTOM_STOP`, `STOP_NO_REASON`, `DOUBLE_PARK` | Lead car decelerates at 4-7 m/s² with no obstacle ahead |
 | 21 | "including dropping passengers off" | `DROPPED`, `DROP_OFF` | Pedestrian spawned on traffic side of a stopped car |
 | 22 | "Importantly, one has to park the car when they arrive" | Errand completes only on `PARKED`; driving past does nothing | Stopping at the door without parking gives no completion |

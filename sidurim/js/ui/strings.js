@@ -144,6 +144,8 @@
       'incident.MERGE_WEDGE': 'A NOSE IS COMING IN',
       'incident.DOUBLE_PARK': '"JUST ONE SECOND"',
       'incident.REVERSE_FOR_SPOT': 'REVERSING FOR A SPOT',
+      'incident.WRONG_WAY_DRIVER': 'ONE WAY. HIS WAY.',
+      'incident.ROAD_STROLL': 'STROLLING IN THE ROAD',
 
       'card.message': 'New message',
       'card.sender': 'Family group',
@@ -374,6 +376,8 @@
       'incident.MERGE_WEDGE': 'מישהו נדחף לך לנתיב',
       'incident.DOUBLE_PARK': '״רק שנייה״',
       'incident.REVERSE_FOR_SPOT': 'ברוורס בשביל חניה',
+      'incident.WRONG_WAY_DRIVER': 'נכנס באין כניסה',
+      'incident.ROAD_STROLL': 'מטיילים באמצע הכביש',
 
       'card.message': 'הודעה חדשה',
       'card.sender': 'קבוצת המשפחה',

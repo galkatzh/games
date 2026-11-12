@@ -109,12 +109,12 @@ test('every errand-level id the sim can send has its text', () => {
   for (const s of ['STANDOFF', 'DOOR_TUG', 'BAIL', 'DRAGGED', 'CHASE']) assert.ok(keys.has(`knife.${s}`), s);
 });
 
-test('the fifteen incidents of GAME_DESIGN 11.1 all have a chevron label', () => {
+test('the seventeen incidents of GAME_DESIGN 11.1 all have a chevron label', () => {
   const doc = read('docs/GAME_DESIGN.md');
   const from = doc.indexOf('### 11.1 Incident catalog');
   const ids = [...doc.slice(from, doc.indexOf('## 12. Parking rules')).matchAll(/^\| `([A-Z_]+)` \|/gm)].map((m) => m[1]);
-  assert.strictEqual(ids.length, 15);
-  for (const id of ids) assert.ok(table.en[`incident.${id}`], id);
+  assert.strictEqual(ids.length, 17);
+  for (const id of ids) assert.ok(table.en[`incident.${id}`] && table.he[`incident.${id}`], id);
 });
 
 test('the lines the design fixes are word for word', () => {
