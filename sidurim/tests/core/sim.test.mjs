@@ -331,7 +331,7 @@ test('factories default every field', () => {
 
 test('every behaviour, state and phase in the shared lists matches the contract', () => {
   const { const: C } = coreTLV();
-  assert.strictEqual(C.BEHAVIOURS.length, 23);
+  assert.strictEqual(C.BEHAVIOURS.length, 24);
   assert.strictEqual(C.PED_STATES.length, 11);
   assert.strictEqual(C.PHASES.length, 10);
   assert.deepStrictEqual(C.VEHICLE_SIZES.bus.length, 12);

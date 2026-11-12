@@ -513,7 +513,7 @@ test('onBrush: stops a moment and glares, with no penalty anywhere', () => {
 test('The design\'s numbers are the ones in tune.js (GAME_DESIGN 10, ARCHITECTURE 12.6)', () => {
   const T = loadBare().tune.peds;
   const want = {
-    walkMin: 1.1, walkMax: 1.5, crossLegal: 1.3, crossSlow: 0.6, slowP: 0.12, redP: 0.15, waitMaxS: 25, jayPerMin: 0.03, strollP: 0.02,
+    walkMin: 1.1, walkMax: 1.5, crossLegal: 1.3, crossSlow: 0.6, slowP: 0.12, redP: 0.15, waitMaxS: 25, jayPerMin: 0.03, strollP: 0.05,
     fleeS: 3, stumbleS: 4, hopTtcS: 1, ttcStartS: 1.5, gateDecel: 16, gateBaseM: 3, dwellMaxS: 25, intentS: 0.8, hornFreezeS: 1.5,
     scooterMin: 6, scooterMax: 7, deliveryMin: 6, deliveryMax: 9, walkerR: 0.35, riderR: 0.6, bubbleM: 120, bubbleMin: 40, bubbleMax: 60
   };
