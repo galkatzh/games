@@ -309,7 +309,7 @@
       hairdresser: ['מספרה', 'Hairdresser'],
       greengrocer: ['ירקן', 'Greengrocer'],
       butcher: ['אטליז', 'Butcher'],
-      ice_cream: ['גלידה', 'Ice cream'],
+      ice_cream: ['גלידרייה', 'Ice cream'],
       post_office: ['דואר', 'Post office'],
       fuel: ['תחנת דלק', 'Fuel'],
       restaurant: ['מסעדה', 'Restaurant'],
@@ -329,7 +329,7 @@
       cinema: ['קולנוע', 'Cinema'],
       gallery: ['גלריה', 'Gallery'],
       library: ['ספרייה', 'Library'],
-      mall: ['מרכז קניות', 'Mall'],
+      mall: ['קניון', 'Mall'],
       marketplace: ['שוק', 'Market'],
       office: ['משרדים', 'Offices']
     },

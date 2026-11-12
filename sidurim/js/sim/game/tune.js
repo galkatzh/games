@@ -93,8 +93,8 @@
       bakery: { he: 'המאפייה', en: 'the bakery' },
       hairdresser: { he: 'המספרה', en: 'the hairdresser' },
       greengrocer: { he: 'הירקן', en: 'the greengrocer' },
-      butcher: { he: 'הקצב', en: 'the butcher' },
-      ice_cream: { he: 'הגלידה', en: 'the ice cream place' },
+      butcher: { he: 'האטליז', en: 'the butcher' },
+      ice_cream: { he: 'הגלידרייה', en: 'the ice cream place' },
       post_office: { he: 'הדואר', en: 'the post office' },
       fuel: { he: 'תחנת הדלק', en: 'the petrol station' }
     },

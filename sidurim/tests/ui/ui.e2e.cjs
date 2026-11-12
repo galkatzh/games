@@ -448,7 +448,7 @@ async function main() {
       assert.ok(dir.streetLeft >= 0, 'street name stays on screen');
       assert.match(await text(page, '.hud-street'), /[\u0590-\u05FF]/);
       assert.match(await text(page, '.hud-chip-text'), /[\u0590-\u05FF]/);
-      assert.strictEqual(await text(page, '.hud-hp-label'), 'ללא תביעות');
+      assert.strictEqual(await text(page, '.hud-hp-label'), 'היעדר תביעות');
       await shot(page, 'he_drive');
     });
   });
@@ -1940,7 +1940,7 @@ async function main() {
       await page.evaluate(() => TLV.ui.setLang('he'));
       await pose('UGLY');
       await lib.frames(page, 3);
-      assert.strictEqual(await text(page, '.hud-prompt'), 'לזחול. ליישר.');
+      assert.strictEqual(await text(page, '.hud-prompt'), 'לאט־לאט. ליישר את ההגה.');
       await shot(page, 'fix_prompt_roll_he');
       await pose('GOOD');
       await lib.frames(page, 3);
@@ -2119,7 +2119,7 @@ async function main() {
       await shot(page, 'way_start');
       await page.evaluate(() => TLV.ui.setLang('he'));
       await lib.frames(page, 3);
-      assert.strictEqual(await text(page, '.tag-way-text'), 'מכאן');
+      assert.strictEqual(await text(page, '.tag-way-text'), 'לכאן');
       await shot(page, 'way_start_he');
       await page.evaluate(() => TLV.ui.setLang('en'));
       let leftWas = Infinity;
@@ -2307,7 +2307,7 @@ async function main() {
       await shot(page, 'touch_title');
       await page.tap('.lang-btn:last-child');
       await lib.frames(page, 3);
-      assert.match(await text(page, '.title-touch'), /מקלדת או שלט משחק/);
+      assert.match(await text(page, '.title-touch'), /מקלדת או שלט/);
       await shot(page, 'touch_title_he');
       await page.evaluate(() => { __pad.connected = true; });
       await lib.frames(page, 3);
