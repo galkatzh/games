@@ -25,7 +25,8 @@ test('the 17 definitions, with the catalog\'s numbers', () => {
   assert.equal(by.RED_WALKER.minHeat, 0.15);
   for (const d of defs) {
     // Owner's decision: dives are short of pass supply, so OVERTAKE_DIVE cools for 15 s and every other incident for the catalog's 30.
-    assert.equal(d.cooldownS, d.id === 'OVERTAKE_DIVE' ? 15 : 30, d.id);
+    // A street to stroll down is nearly always to hand, so ROAD_STROLL cools for 60 s, or it would be most of what the day stages.
+    assert.equal(d.cooldownS, d.id === 'OVERTAKE_DIVE' ? 15 : (d.id === 'ROAD_STROLL' ? 60 : 30), d.id);
     assert.equal(d.weight, 3);
     assert.ok(d.telegraph.s >= 1, `${d.id} telegraphs at least 1 s`);
   }

@@ -439,7 +439,7 @@ Soak test: a headless brake-only bot must avoid at least 95% of staged incidents
 | `WRONG_WAY_DRIVER` | `WRONG_WAY` | small one-way street | High beams coming the wrong way, then the horn | 3.0-4.0 | 0.15 | no |
 | `ROAD_STROLL` | `STROLL_ROAD` | small one-way street | Walker steps off the kerb and strolls down the lane, back turned | 3.5-4.5 | 0 | yes |
 
-Each incident also has a `cooldownS` of 30 and a selection `weight` of 3 by default.
+Each incident also has a `cooldownS` of 30 and a selection `weight` of 3 by default. `ROAD_STROLL` cools for 60 s, because a street to stroll down is nearly always to hand.
 
 ---
 

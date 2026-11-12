@@ -29,7 +29,7 @@
     { id: 'DOUBLE_PARK', minHeat: 0, weight: 3, cooldownS: 30, anchor: 'leadCar', telegraph: { s: 1.0, cue: 'hazards' }, tta: [3.0, 4.0], escape: 'brake', search: true, actors: [{ kind: 'car', command: 'DOUBLE_PARK' }] },
     { id: 'REVERSE_FOR_SPOT', minHeat: 0.3, weight: 3, cooldownS: 30, anchor: 'leadCar', telegraph: { s: 1.0, cue: 'reverseLights' }, tta: [2.2, 3.0], escape: 'laneOrBrake', search: true, actors: [{ kind: 'car', command: 'REVERSE_FOR_SPOT' }] },
     { id: 'WRONG_WAY_DRIVER', minHeat: 0.15, weight: 3, cooldownS: 30, anchor: 'smallOneWay', telegraph: { s: 1.2, cue: 'highBeams' }, tta: [3.0, 4.0], escape: 'brake', search: false, actors: [{ kind: 'car', command: 'WRONG_WAY' }] },
-    { id: 'ROAD_STROLL', minHeat: 0, weight: 3, cooldownS: 30, anchor: 'smallStreet', telegraph: { s: 1.2, cue: 'backTurned' }, tta: [3.5, 4.5], escape: 'brake', search: true, actors: [{ kind: 'walker', command: 'ROAD_STROLL' }] }
+    { id: 'ROAD_STROLL', minHeat: 0, weight: 3, cooldownS: 60, anchor: 'smallStreet', telegraph: { s: 1.2, cue: 'backTurned' }, tta: [3.5, 4.5], escape: 'brake', search: true, actors: [{ kind: 'walker', command: 'ROAD_STROLL' }] }
   ];
 
   /** Queues the shipped definitions. Called once by game.register, before the queue drains. */
