@@ -944,7 +944,7 @@
   }
 
   /**
-   * On a living street, a service road or a one-lane one-way street, 5% of walkers take to the road edge (GAME_DESIGN 10).
+   * On a living street, a service road or a one-lane one-way street, 2% of walkers take to the road edge (GAME_DESIGN 10).
    * @param {object} S Sim state.
    * @param {object} p Pedestrian on a row.
    * @returns {boolean} True when they have.

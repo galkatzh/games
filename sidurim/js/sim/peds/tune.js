@@ -205,7 +205,7 @@
     jayShifts: [0, 1.5, -1.5, 3, -3, 4.5, -4.5],
 
     // Strolling down the road (GAME_DESIGN 10).
-    strollP: 0.05,
+    strollP: 0.02,
     strollMinM: 14,
     strollMaxM: 34,
     /** Keeps this far inside the lane's edge. */

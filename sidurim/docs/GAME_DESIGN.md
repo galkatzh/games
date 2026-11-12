@@ -365,7 +365,7 @@ are sparse [M, about 12% of ways].
 | `CROSS_SLOW` | "walk slowly" | 12% of crossers | Crosses at 0.6 m/s and may pause mid-road 1-3 s | Dwell capped at 25 s, then hurries off |
 | `JAYWALK` | "cross the road unexpectedly" | 3% per minute per walker near a road | Leaves the sidewalk mid-block | Ambient walkers hop back if car TTC falls under 1 s |
 | `RED_CROSS` | "cross on red lights" | 15% of waiters, or after 25 s | Crosses against the signal | Same guards |
-| `STROLL_ROAD` | "pedestrians walking slowly on the road" | 5% of walkers on `living_street`, service roads and one-lane one-way residential streets, and staged as `ROAD_STROLL` | Walks down the road edge at 0.8 m/s. Staged: down the middle of the lane, back to the traffic | Moves aside slowly. Staged: only 3 s after a car comes up behind |
+| `STROLL_ROAD` | "pedestrians walking slowly on the road" | 2% of walkers on `living_street`, service roads and one-lane one-way residential streets, and staged as `ROAD_STROLL` | Walks down the road edge at 0.8 m/s. Staged: down the middle of the lane, back to the traffic | Moves aside slowly. Staged: only 3 s after a car comes up behind |
 | `DROPPED` | "dropping passengers off" | Spawned by `DROPPED` car | Gets out on the traffic side, walks to curb | |
 | `FLEE` | | Near a crash | Hurries away 3 s | |
 | `STUMBLE` | | After being hit | Sits, stands, shakes head | Non-graphic, 4 s, then leaves |
