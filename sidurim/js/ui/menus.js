@@ -263,6 +263,9 @@
 
     dom.titleTouch = el('div', 'title-touch off', scr);
     dom.titleStart = button(scr, 'title-start', pressEnter);
+    dom.titleOnline = button(scr, 'title-online', function () {
+      window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyO', key: 'o', bubbles: true }));
+    });
     dom.titleControls = controlsLine(scr);
 
     var foot = el('div', 'title-foot', scr);
@@ -338,6 +341,7 @@
       { text: C.osmUrl, ltr: true }
     ]);
     creditsBlock(t('credits.engine'), [{ text: C.three, ltr: true }, { text: C.threeLine, ltr: true }]);
+    creditsBlock(t('credits.online'), [{ text: C.trystero, ltr: true }, { text: C.trysteroLine, ltr: true }, { text: t('credits.onlineLine') }]);
     creditsBlock(t('credits.art'), ids.length ? ids.map(function (id) {
       return { text: creditLine(id, index[id].credit) };
     }) : [{ text: t('credits.noArt') }]);
@@ -422,6 +426,7 @@
     u().setText(dom.pickHead, t('title.pick'));
     u().setRich(dom.pickKeys, t('title.pickKeys'));
     u().setText(dom.titleStart, t('title.start'));
+    u().setRich(dom.titleOnline, t('title.online'));
     u().setText(dom.titleTouch, t('title.touch'));
     u().setText(dom.titleOsm, TLV.ui.strings.OSM);
     u().setRich(dom.langBtn, t('title.langKey') + ' ' + t('title.langName'));
@@ -470,7 +475,8 @@
     }
     if (name !== 'run.end') return;
     var marked = markedRun(p.reason, S.game);
-    var isBest = !marked && p.money > bestMoney();
+    // A shared day is another game: half a board is no day to hold a full one against.
+    var isBest = !marked && p.money > bestMoney() && !u().versus.shared(S);
     if (isBest) u().save(TLV.tune.ui.keyBest, Math.round(p.money));
     ended = { reason: p.reason, money: p.money, rank: p.rank, stats: p.stats, isBest: isBest && p.money > 0, marked: marked };
     if (dom) dom.lastEnd = null;
@@ -504,12 +510,15 @@
   }
 
   function paintEnd(info) {
-    var key = JSON.stringify([info.reason, info.money, info.rank, info.marked, TLV.ui.strings.lang()]);
+    var shared = sim ? u().versus.endInfo(sim) : null;
+    var restart = shared ? shared.restart : null;
+    var key = JSON.stringify([info.reason, info.money, info.rank, info.marked, TLV.ui.strings.lang(), restart]);
     if (dom.lastEnd === key) return;
     dom.lastEnd = key;
     var straight = info.reason === 'REVOKED';
     dom.endCard.classList.toggle('straight', straight);
     dom.end.classList.toggle('win', info.reason === 'WIN');
+    dom.end.classList.toggle('shared', !!shared);
     u().setText(dom.endTitle, t('end.' + info.reason + '.title'));
     var line = t('end.' + info.reason + '.line');
     u().setText(dom.endLine, line);
@@ -522,11 +531,11 @@
     u().show(dom.endTotalRow, !straight);
     dom.endTotal.classList.toggle('plain', !!info.marked);
     var best = info.marked ? bestMoney() : Math.max(bestMoney(), info.money);
-    u().show(dom.endBest, !straight && (!info.marked || best > 0));
+    u().show(dom.endBest, !straight && !shared && (!info.marked || best > 0));
     u().setText(dom.endBest, info.isBest ? t('end.newBest') : t('end.best', { money: TLV.ui.strings.money(best) }));
     u().setText(dom.endStamp, t('end.' + info.reason + '.stamp'));
     dom.endStamp.classList.toggle('good', info.reason === 'WIN');
-    u().setRich(dom.endRestart, t(straight ? 'end.restartRevoked' : 'end.restart'));
+    u().setRich(dom.endRestart, t(restart || (straight ? 'end.restartRevoked' : 'end.restart')));
     u().show(dom.endClass, !straight);
     u().setText(dom.endNextLabel, t(straight ? 'end.difficultyPlain' : 'end.difficulty'));
     dom.endTally.textContent = '';
@@ -570,6 +579,11 @@
     var info = endInfo(S);
     u().show(dom.end, !!info);
     if (info) paintEnd(info);
+  };
+
+  /** @returns {boolean} True while the credits hold the keys. */
+  menus.busy = function () {
+    return creditsOpen;
   };
 
   /** @returns {boolean} True once a run has started on this page. */

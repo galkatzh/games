@@ -9,7 +9,7 @@ const { config } = coreTLV();
 const DEFAULTS = {
   seed: null, map: null, lang: 'en', debug: 0, dev: 0, invariants: 0, record: 0, autoplay: null, notitle: 0, errand: 1,
   errandDef: null, spawn: null, clock: 120, clockGiven: 0, heat: null, immortal: 0, density: null, traffic: 1, peds: 1, incidents: 1,
-  contest: 'auto', knife: 'auto', quality: 'auto', mute: 0, radio: 'auto', hud: 1, timescale: 1
+  contest: 'auto', knife: 'auto', quality: 'auto', mute: 0, radio: 'auto', hud: 1, timescale: 1, net: 'trystero', room: null, relay: null
 };
 
 test('normalize applies the section 16.1 defaults', () => {

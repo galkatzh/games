@@ -54,9 +54,18 @@
     'score.bonus': ['hud', 'audio'],
     'score.chain': ['hud'],
     'clock.warn': ['hud', 'audio'],
-    'run.start': ['hud', 'cards', 'menus', 'bubbles', 'audio'],
+    'run.start': ['hud', 'cards', 'menus', 'bubbles', 'audio', 'versus'],
     'run.end': ['menus', 'audio'],
-    'bubble': ['bubbles']
+    'bubble': ['bubbles'],
+    'versus.start': ['none'],
+    'versus.peer': ['versus'],
+    'versus.pick': ['none'],
+    'versus.done': ['versus'],
+    'versus.taken': ['versus'],
+    'versus.unlock': ['versus'],
+    'versus.void': ['versus'],
+    'versus.ended': ['versus'],
+    'versus.ready': ['none']
   };
 
   var root = null;
@@ -187,7 +196,7 @@
     var out = ['title', 'pause', 'credits', 'hud', 'debug', 'dev', 'card', 'payout', 'block'];
     ['REACHED_SHOP', 'SHAKEN', 'WHISTLE'].forEach(function (x) { out.push('resolve.' + x); });
     ['STANDOFF', 'DOOR_TUG', 'BAIL', 'DRAGGED', 'CHASE'].forEach(function (x) { out.push('knife.' + x); });
-    ['CLOCK', 'TOWED', 'CAUGHT', 'REVOKED', 'WIN'].forEach(function (x) { out.push('end.' + x); });
+    ['CLOCK', 'TOWED', 'CAUGHT', 'REVOKED', 'WIN', 'DONE'].forEach(function (x) { out.push('end.' + x); });
     return out;
   }
 
@@ -240,6 +249,7 @@
     ui.hud.relabel(sim);
     ui.cards.relabel(sim);
     ui.menus.relabel(sim);
+    ui.versus.relabel(sim);
   };
 
   /** The language at boot: the URL if it says, then the last choice, then English. */
@@ -361,6 +371,8 @@
   ui.windowLeft = function () {
     var loop = theLoop();
     if (!loop || loop.isPaused()) return;
+    // A shared day does not wait: the other driver is still out there, and a paused sim would only fall behind the board.
+    if (sim && ui.versus.shared(sim)) return;
     ui.togglePause(true);
   };
 
@@ -427,6 +439,7 @@
     ui.hud.onEvent(S, name, payload);
     ui.cards.onEvent(S, name, payload);
     ui.menus.onEvent(S, name, payload);
+    ui.versus.onEvent(S, name, payload);
     ui.bubbles.onEvent(S, name, payload);
     ui.debugOverlay.onEvent(S, name, payload);
     if (TLV.render && TLV.render.onEvent) TLV.render.onEvent(name, payload);
@@ -452,6 +465,8 @@
     ui.hud.build(root, S);
     ui.minimap.build(ui.hud.mapSlot(), S);
     ui.cards.build(root, S);
+    // Before the menus, so its key listener is ahead of theirs.
+    ui.versus.build(root, S);
     ui.menus.build(root, S);
     ui.debugOverlay.build(root, S);
     TLV.audio.init(S);
@@ -480,6 +495,7 @@
     ui.bubbles.frame(S, alpha, dt);
     ui.cards.frame(S, dt);
     ui.menus.frame(S);
+    ui.versus.frame(S, showHud);
     ui.debugOverlay.frame(S, dtReal);
     TLV.audio.frame(S, dt);
   };

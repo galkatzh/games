@@ -12,10 +12,14 @@ Road behaviour is the joke, not who people are. Nothing in it is graphic.
   is every threshold of the automatic quality ladder.
 - **Only Chromium has drawn it.** Firefox loaded the scripts but could not create WebGL on the test machine, and WebKit was not tried.
   A real gamepad, a real phone and a WebGL1-only GPU were only emulated.
+- **Playing online has never crossed the internet.** Two pages of one browser have played a shared day through the real Trystero
+  library and a real WebRTC data channel, with the signaling relay on the same machine. The public relays, two different networks,
+  and two people at two keyboards are all untried. Nobody knows yet how the board feels to race over.
 
 ## Play
 
-Double-click `index.html`. It runs from `file://`, offline. There is nothing to install and no build step.
+Double-click `index.html`. It runs from `file://`, offline. There is nothing to install and no build step. Only
+[playing online](#playing-online) needs the internet.
 
 It also runs from any static server:
 
@@ -54,8 +58,12 @@ On foot, W A S D or the arrows move you relative to the camera, and Space sidest
 On the title card, Left and Right (or Up and Down, or 1 and 2) pick the difficulty, L switches between English and Hebrew,
 M mutes, and I opens the credits, as it does on the pause screen. To start the day, press Enter or almost any other key, click the
 start line, or press Start on a gamepad. Modifier and function keys do nothing there, and Esc, P, C, V, N and B do not start it either.
+O opens the lobby for playing online, and starts nothing.
 
 At the end of a run, Enter or R starts another, or Start on a gamepad. Left and Right, or 1 and 2, change the difficulty first.
+
+Playing online adds three keys: O on the title card opens the lobby, a digit picks an errand from the board, and T puts the board up
+again on the way to one. See [Playing online](#playing-online).
 
 ### The car radio
 
@@ -112,6 +120,44 @@ out the 25 s chase. You can only run: there is no fighting back. Three strikes e
 
 **You lose** if the clock reaches 0, if your No-Claims bar empties, or on the third knife strike. Hitting a pedestrian is always
 heavily penalized and never rewarded, and that includes the attacker. A second hit ends the run.
+
+## Playing online
+
+Two drivers, one list. Both of you get the same board of errands at the same doors, and an errand one of you has parked at is gone
+for the other. The most money at the end wins the day.
+
+1. On the title card press O. One of you presses H to open a room and reads out its four-letter code.
+2. The other presses J and types the code. A link ending `?room=CODE` does the same.
+3. When the lobby says there are two drivers in the room, either of you presses Enter.
+
+**The board.** It comes up at the start, after every park, and whenever your errand is taken from under you. Each open errand shows
+the road to its door from where you are, what a tidy park there pays, and the seconds it puts on your clock. It also says when the
+other driver is already on the way. Press the errand's number: 1 to 9, and 0 for the gan. On the way to an errand, T shows the board
+again, and picking another one lets the first go. The gan opens only when everything else is done, and whoever picks the kid up ends
+the day for both.
+
+**What is shared.** Only the board, and where the other driver is: a see-through car in the street and a purple dot on the minimap.
+Each of you has your own traffic, pedestrians, rival and clock, and you cannot touch each other. If your clock runs out you are out,
+and the other plays on. The other driver's money and the number of errands left are under your own money.
+
+**What it needs.** An internet connection, for this mode only. The two browsers find each other through public relays (the
+[Trystero](https://github.com/dmotz/trystero) library, over the Nostr network) and then talk directly over WebRTC. No server belongs
+to the game, nothing is sent until you open a room, and no account, name or identity is made or kept. Some networks block
+browser-to-browser connections altogether, and then the lobby stays on "Waiting for another driver". A relay of your own can be named
+with `?relay=wss://...`. More than two drivers can share a room.
+
+**On one machine.** `?net=local` joins the tabs of one browser with no network at all. Open the game in two windows side by side,
+both with `?net=local`. A window that is hidden stops, as any browser tab does, so keep both in view.
+
+**The vendored library.** `vendor/trystero.min.js` is Trystero 0.27.0 with its Nostr strategy and its one dependency,
+`@noble/secp256k1`, as a single classic script. The game has no build step and runs from `file://`, where ES modules do not load, so
+the library is bundled once and committed. To make it again:
+
+```sh
+npm install trystero@0.27.0 esbuild
+echo "export { joinRoom, defaultRelayUrls } from 'trystero';" > entry.js
+npx esbuild entry.js --bundle --format=iife --global-name=Trystero --minify --target=es2020 --legal-comments=none --outfile=vendor/trystero.min.js
+```
 
 ## Extending it
 
@@ -498,6 +544,8 @@ node tests/e2e/smoke.e2e.cjs
 node tests/e2e/knife.e2e.cjs
 node tests/e2e/replay.e2e.cjs
 node tests/e2e/extensibility.e2e.cjs
+node tests/e2e/versus.e2e.cjs
+node tests/e2e/online.e2e.cjs
 node tests/ui/ui.e2e.cjs
 node tests/render/city.e2e.cjs
 node tests/render/shots.e2e.cjs
@@ -509,7 +557,10 @@ node tests/player/input.e2e.cjs
 
 `file_protocol` covers `file://`, a static server, the error overlay and Hebrew. `smoke` has the errands bot finish an errand. `knife`
 runs all four exits. `replay` covers replay and render determinism. `extensibility` adds a storefront, a landmark, an errand and an
-overlay op on a copy of the tree, with data changes only.
+overlay op on a copy of the tree, with data changes only. `versus` plays a shared day between two pages of one browser with
+`?net=local`: the lobby, the board, an errand taken from under a driver, the verdict and another day. `online` does the same through the
+real Trystero bundle and WebRTC, with a small Nostr relay of its own on localhost (`tests/e2e/lib/nostr_relay.cjs`), so it needs no
+internet and proves nothing about the public relays.
 
 Playwright is not a dependency of the project. It is found by an absolute path from the machine this was written on,
 `/home/g/tagger/node_modules/playwright`, at `tools/lib/pw.cjs` line 10 and `tests/ui/lib.cjs` line 114. On another machine, install
@@ -614,6 +665,9 @@ any other number counts as 1. An unknown parameter is ignored, and a repeated on
 | `radio` | `auto`, `on`, `off` | `auto` | The car radio. `auto` plays it, except in a browser that reports itself driven by automation (`navigator.webdriver`), so no browser test reaches the network. B's saved choice also applies | Warns, `auto` |
 | `hud` | 0, 1 | 1 | Hides the HUD for clean screenshots | Warns, stays 1 |
 | `timescale` | number | 1 | Multiplies loop speed. Changes neither `DT` nor the sim's own slow motion | Not a number: warns, 1. 0 or less: clamped to 0.001, which all but stops the game |
+| `net` | `trystero`, `local` | `trystero` | How the drivers of a shared day reach each other. `local` joins the tabs of one browser, with no network | Warns, `trystero` |
+| `room` | four letters | none | Opens the lobby and joins this room at once. See [Playing online](#playing-online) | Anything that is not a room code is ignored |
+| `relay` | `ws://` or `wss://` URLs, comma separated | none | Signaling relays to use in place of Trystero's public ones | An entry that is not such a URL is dropped, and with none left the public relays are used |
 
 ## Credits and licences
 
@@ -626,6 +680,10 @@ carries the attribution in its header. In OSM's words: "If you alter or build up
 the same license."
 
 **Three.js** r159, MIT licence, is vendored in `vendor/three.min.js`. The licence text is `vendor/three.LICENSE`.
+
+**Trystero** 0.27.0 by Dan Motzenbecker, MIT licence, with `@noble/secp256k1` 3.2.0 by Paul Miller, MIT licence, is vendored in
+`vendor/trystero.min.js` for [playing online](#playing-online). Both licence texts are in `vendor/trystero.LICENSE`, and the credits
+view names them.
 
 **Horn recordings.** Every horn you hear is cut from two recordings on Wikimedia Commons. The originals are in `assets_src/sounds/`,
 unchanged except that the WAV is stored as lossless FLAC, and each sidecar there names the cuts. `node tools/pack_sounds.mjs` (it

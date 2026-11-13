@@ -25,6 +25,12 @@
     doorOpenRad: 1.45,
     doorLen: 1.0,         // matches the 1.0 m box of ARCHITECTURE 13.1
     wheelR: 0.31,
+    remoteAlpha: 0.62,    // GAME_DESIGN 26: another driver's car is see-through, because nothing in this street can touch it
+    remoteRate: 10,       // per second, toward where that driver last said they were
+    remoteLeadS: 0.5,     // their last speed carries the car on this long between reports
+    remoteSnapM: 30,      // further than this from its place, it is put there
+    remoteHideM: 3,       // gone inside this of the player, and whole from twice it
+    remotePaint: 0xb06cff,
     rollK: 0.0125,        // rad per m/s2 of lateral acceleration
     rollMax: 0.085,
     pitchK: 0.0065,       // rad per m/s2 of braking or launch
@@ -904,7 +910,8 @@
       roll: new Float32Array(n), pitch: new Float32Array(n), spin: new Float32Array(n), steer: new Float32Array(n),
       doorT: new Float32Array(n), doorSide: new Uint8Array(n),
       dent: new Float32Array(n), dentX: new Float32Array(n), dentZ: new Float32Array(n),
-      tier: new Uint8Array(n), ctx: {}, paint: {}, playerDoor: new THREE.Color(PLAYER_DOOR)
+      tier: new Uint8Array(n), ctx: {}, paint: {}, playerDoor: new THREE.Color(PLAYER_DOOR),
+      remote: {}, remotePaint: new THREE.Color(Q.remotePaint)
     };
     Object.keys(BUILDERS).forEach(function (kind) {
       var g = newBody();
@@ -1159,6 +1166,51 @@
     ctx.blobN++;
   }
 
+  /**
+   * The other drivers of a shared day (GAME_DESIGN 26). Each runs a sim of their own and reports a pose a few times a second, so their
+   * car is drawn where the last report and its speed put it, eased, and takes no part in this street: it is no Vehicle.
+   */
+  function drawRemote(S, ctx) {
+    var vs = S.versus;
+    if (!vs || !vs.on) return;
+    var seen = R.remote;
+    var k = 1 - Math.exp(-Q.remoteRate * ctx.dt);
+    var blobs = R.blobs.mesh;
+    for (var id in vs.peers) {
+      var p = vs.peers[id];
+      if (!p.seen || p.ended) {
+        delete seen[id];
+        continue;
+      }
+      var lead = Math.min(Q.remoteLeadS, Math.max(0, S.t - p.at));
+      var tx = p.x + Math.cos(p.h) * p.v * lead;
+      var ty = p.y + Math.sin(p.h) * p.v * lead;
+      var s = seen[id];
+      if (!s || TLV.math.dist(s.x, s.y, tx, ty) > Q.remoteSnapM) s = seen[id] = { x: tx, y: ty, h: p.h, spin: 0 };
+      s.x += (tx - s.x) * k;
+      s.y += (ty - s.y) * k;
+      s.h += TLV.math.wrapPi(p.h - s.h) * k;
+      s.spin = (s.spin + p.v * ctx.dt / Q.wheelR) % (Math.PI * 2);
+      TLV.render.coords.toThree(s.x, s.y, 0, _p);
+      _e.set(0, s.h, 0, 'YZX');
+      _q.setFromEuler(_e);
+      _m.compose(_p, _q, _s);
+      lampState[0] = lampState[1] = lampState[2] = lampState[3] = 0;
+      // Both drivers start a day at the same spawn, and a car drawn inside the player's own is only in the way.
+      var gap = TLV.math.dist(s.x, s.y, S.player.fx, S.player.fy);
+      var show = TLV.math.clamp((gap - Q.remoteHideM) / Q.remoteHideM, 0, 1);
+      if (show <= 0) continue;
+      put(R.bodies.hatch, _m, R.remotePaint, lampState, 1, Q.remoteAlpha * show, s.spin, 0, 0, 0, 0, 0);
+      if (ctx.blobN >= blobs.instanceMatrix.count) continue;
+      var size = TLV.const.VEHICLE_SIZES.hatch;
+      _p.y = Q.blobLift;
+      _v.set(size.length * 1.22, 1, size.width * 1.5);
+      _m2.compose(_p, _q, _v);
+      _m2.toArray(blobs.instanceMatrix.array, ctx.blobN * 16);
+      ctx.blobN++;
+    }
+  }
+
   /** Draws the active cars of one tier. */
   function drawTier(cars, tier, ctx) {
     for (var i = 0; i < cars.length; i++) {
@@ -1215,6 +1267,7 @@
     drawTier(cars, TIER_SHADOW, ctx);
     markTier('nearN');
     drawTier(cars, TIER_FAR, ctx);
+    drawRemote(S, ctx);
 
     for (var kindName in R.bodies) flush(R.bodies[kindName]);
     flush(R.player);

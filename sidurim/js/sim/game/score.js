@@ -113,7 +113,8 @@
     var g = S.game;
     var e = g.errand;
     var T = TLV.tune.game;
-    if (!e || g.pedHitThisErrand) return 0;
+    // A shared day's errand that another driver parked at first pays nothing (versus.js).
+    if (!e || g.pedHitThisErrand || e._void) return 0;
     var quality = e.quality || 'UGLY';
     var p = T.qualityP[quality];
     var bay = (e.parkMethod || 'BAY') === 'BAY';

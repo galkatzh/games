@@ -847,3 +847,57 @@ ARCHITECTURE section 17.
 3. **Parking kills pace, or a block yields no good bay.** Mitigated by snap capture, staged bays and double-parking. The arming
    rule and the rival profile are arithmetic only: the quality thresholds and the 20-45% loss rate need playtesting.
 4. **The on-foot mode is the riskiest tone.** Keep to section 15.3, and review all copy and art against section 21.
+
+---
+
+## 26. A shared day: two drivers, one list
+
+Added after the single-player game, at the owner's request: "Both players compete for the same tasks. They may choose which one to
+pursue seeing the expected benefit. If a task was completed by one player the other player cannot choose it."
+
+**The room.** On the title, O opens the lobby. One driver opens a room and gets a four-letter code. The other types it. Either starts
+the day. Drivers find each other through Trystero's public signaling relays and then talk browser to browser over WebRTC. There is no
+server of the game's own. More than two can be in a room, and nothing below changes: "the other driver" is whoever is ahead.
+
+**Each driver has a street of their own.** Traffic, pedestrians, incidents, rivals and the clock all run in each browser alone, with
+all the rules of sections 5 to 15. Only the board is shared, and where the others are: their cars are drawn see-through, with a
+purple dot on the minimap, and nothing can touch them. Sharing a street would need a server, or a lockstep sim that waits for the
+slowest browser. The board needs neither.
+
+**The board.** Nine errands and the gan, each at a door of its own, dealt at 350 to 950 m of road from the spawn (the gan at 900 m).
+Milk is always one of them. One driver deals, the lowest id in the room, and sends the board to the rest, so everyone stands the same
+errand at the same door.
+
+**Choosing.** At the start of the day, after each park, and whenever a driver's errand is taken from under them, the board comes up.
+Each open errand shows what it is worth from where that driver stands:
+
+| Shown | Is |
+|---|---|
+| Metres | The road to its door from here |
+| Pay | `(80 + 0.1 * metres) * 1.2`: a GOOD park with no contact, by section 8.4. A PERFECT or spotless one pays more, a bad one less |
+| Seconds | The clock award of section 7 for that road |
+| "The other driver is on the way" | Someone else has picked it and not parked yet |
+
+A digit picks: 1 to 9 for the errands, 0 for the gan. Parked or at the spawn, the phone card then shows as on any day and the car
+pulls out. T puts the board up again on the way to an errand. Picking another row lets the first go, and nothing is lost by looking.
+The clock does not run while the car stands at a card, as on any day. On the move it does, board up or not.
+
+**An errand is done once.** The first driver to park at it has it, and it is struck off every board. A driver on the way there keeps
+driving, with no errand and the board up: "TAKEN. PICK ANOTHER." Two drivers who park at the same door within a network delay of
+each other are settled the same way in both browsers: whoever parked sooner into their own day, and the lower id when level. The
+other one's pay and clock award are taken back.
+
+**The gan is last.** It cannot be picked while any other errand is open. When only it is left, everyone is told, and whoever picks
+the kid up ends the day for all. It keeps the rules the last errand has on any day: no knife, the finale's rage cap, its own Q reach.
+Every other errand takes its heat and its award step from how many that driver has done, capped at the sixth.
+
+**The end.** A driver's day ends as any day does, on the clock, the tow, the knife or a revoked licence, and the rest play on. When
+the board is empty everyone still out ends on `DONE`. The most money wins. A day with a person under the car wins nothing extra: it
+costs what section 8.3 says. The end screen shows both totals and the verdict, or that the other driver is still out. Enter or R
+asks for another day together, and one starts, with a new board, when everyone in the room has ended and asked. A shared day never
+counts as a best day. If the other driver leaves, the day goes on with the board as it stands, and the next one is a day alone.
+A driver who comes into a room with a day already on is told so, waits in the lobby, and is in the next day when it starts.
+
+**What is deliberately not there.** No chat, no names, no account. No collisions between drivers. No pause for both: Esc pauses one
+browser, the other plays on, and what happened meanwhile lands when the first comes back. The window losing focus does not pause a
+shared day, as it does a day alone.

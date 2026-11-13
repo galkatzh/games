@@ -35,7 +35,11 @@
     mute: { type: 'flag', def: 0 },
     radio: { type: 'enum', values: ['auto', 'on', 'off'], def: 'auto' },
     hud: { type: 'flag', def: 1 },
-    timescale: { type: 'number', min: 1e-3, max: Infinity, def: 1 }
+    timescale: { type: 'number', min: 1e-3, max: Infinity, def: 1 },
+    // A shared day (GAME_DESIGN 26): how peers are reached, a room to join at once, and relays to use in place of the public ones.
+    net: { type: 'enum', values: ['trystero', 'local'], def: 'trystero' },
+    room: { type: 'string', def: null },
+    relay: { type: 'string', def: null }
   };
 
   /** Warns about a value that cannot be used and yields the default. */

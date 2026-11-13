@@ -291,7 +291,8 @@ test('every event of ARCHITECTURE 11 has a handling, or an explicit none', () =>
 test('the event table tells the truth about each consumer', () => {
   const sources = {
     hud: read('js/ui/hud.js'), audio: read('js/ui/audio.js'), cards: read('js/ui/cards.js'),
-    menus: read('js/ui/menus.js'), bubbles: read('js/ui/bubbles.js'), debug: read('js/ui/debug_overlay.js')
+    menus: read('js/ui/menus.js'), bubbles: read('js/ui/bubbles.js'), debug: read('js/ui/debug_overlay.js'),
+    versus: read('js/ui/versus.js')
   };
   for (const [name, who] of Object.entries(TLV.ui.EVENTS)) {
     const claimed = who.filter((w) => w !== 'none');
@@ -318,12 +319,15 @@ test('no UI code assigns into the sim', () => {
   }
 });
 
-test('the only sim calls in the UI are the bus and setDifficulty', () => {
+test('the only sim calls in the UI are the bus, setDifficulty, and a shared day\'s board from its own file', () => {
   for (const file of UI_FILES) {
     const src = read(file);
     assert.ok(!/TLV\.(sim|traffic|peds|player|foot|collide)\.[a-zA-Z]+\s*\(/.test(src), file);
     const game = [...src.matchAll(/TLV\.game\.(\w+)/g)].map((m) => m[1]);
-    for (const name of game) assert.ok(name === 'score' || name === 'setDifficulty', `${file}: TLV.game.${name}`);
+    // Picking from the board is a choice made on a screen, like the difficulty. One file makes it, and the rest ask that file.
+    const board = file === 'js/ui/versus.js';
+    for (const name of game) assert.ok(name === 'score' || name === 'setDifficulty' || (board && name === 'versus'), `${file}: TLV.game.${name}`);
+    assert.strictEqual(/TLV\.net\b/.test(src), board, `${file}: only the board's file reaches the room`);
     const signals = [...src.matchAll(/signals\.(\w+)\b/g)].map((m) => m[1]);
     for (const name of signals) assert.strictEqual(name, 'laneState', file);
   }

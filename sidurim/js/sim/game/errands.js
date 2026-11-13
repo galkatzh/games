@@ -208,6 +208,9 @@
     var t = targets(S);
     var ids = [];
     for (var i = 0; i < kinds.length; i++) ids = ids.concat(t.byKind[kinds[i]] || []);
+    // A shared board gives each door to one errand, so the doors it has already handed out are left alone.
+    var taken = S._boardTaken;
+    if (taken) ids = ids.filter(function (id) { return !taken[id]; });
     var list = shuffled(S.rng.game, ids);
     var NAMED = TLV.const.POIF.NAMED;
     if (named === 'require') list = list.filter(function (id) { return W.pois[id].flags & NAMED; });
@@ -475,6 +478,74 @@
     if (!saved) return null;
     gg.plan[index] = last.id;
     return make(S, last, index, saved);
+  };
+
+  /** @returns {?object} A definition by id. Private to this package. */
+  errands._def = function (id) {
+    return byId[id] || null;
+  };
+
+  /**
+   * One row of a shared board (GAME_DESIGN 26): a definition bound to a door a leg away from a pose, by the same ladder a day uses.
+   * A row is plain data, so the peer who makes the board can send it, and every peer stands the same errand at the same door.
+   * @param {object} S Sim state.
+   * @param {object} def Errand definition.
+   * @param {{x:number,y:number,h:number}} from The pose the leg is measured from.
+   * @param {number} leg Metres of route wanted.
+   * @param {Object<number,boolean>} taken POIs other rows hold. The row's own is added.
+   * @returns {?{defId:string,poi:number,x:number,y:number,edge:number,name:?object}} Null when no door can be reached.
+   */
+  errands._boardRow = function (S, def, from, leg, taken) {
+    S._boardTaken = taken;
+    var hit = null;
+    try {
+      hit = pinned(S, def, from);
+      if (hit && taken[hit.door.poi]) hit = null;
+      hit = hit || ladder(S, def, from, leg) || rescue(S, def, from, leg);
+    } finally {
+      S._boardTaken = null;
+    }
+    if (!hit) return null;
+    if (hit.door.poi >= 0) taken[hit.door.poi] = true;
+    return { defId: def.id, poi: hit.door.poi, x: hit.door.x, y: hit.door.y, edge: hit.door.edge, name: hit.door.name || null };
+  };
+
+  /**
+   * The road from a pose to a board row's door.
+   * @returns {?{route:object,laneId:number,s:number}} Null when it cannot be reached from there.
+   */
+  errands._rowRoute = function (S, row, from) {
+    return doorRoute(S, from, row.x, row.y);
+  };
+
+  /**
+   * Stands a board row up as an Errand, routed from a pose.
+   * @param {object} S Sim state.
+   * @param {object} row A row of errands._boardRow, as sent.
+   * @param {number} index The errand's place in this driver's day.
+   * @param {{x:number,y:number,h:number}} from Where the leg starts.
+   * @returns {?object} Errand, or null for an unknown definition or a door with no road to it.
+   */
+  errands._fromRow = function (S, row, index, from) {
+    var def = byId[row.defId];
+    if (!def || !S.world) return null;
+    var found = doorRoute(S, from, row.x, row.y);
+    if (!found) return null;
+    var door = { x: row.x, y: row.y, poi: row.poi, edge: row.edge };
+    if (row.name) door.name = row.name;
+    return make(S, def, index, { door: door, found: found });
+  };
+
+  /** @returns {{he:string,en:string}} A board row's errand in words, with its door's name in place. */
+  errands._rowText = function (S, row) {
+    var def = byId[row.defId];
+    var name = errands._rowName(S, row);
+    return { he: def.text.he.split('{poi}').join(name.he), en: def.text.en.split('{poi}').join(name.en) };
+  };
+
+  /** @returns {{he:string,en:string}} What a board row's door is called. */
+  errands._rowName = function (S, row) {
+    return row.name || nameFor(S.world, row.poi);
   };
 
   /** Walks forward from a directed edge through PASS junctions to the first SIGNAL. @returns {?object} DirEdge that ends there. */

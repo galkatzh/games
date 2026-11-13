@@ -480,6 +480,17 @@
     strollClearM: 25,
     strollKerbM: 0.3,
 
+    // A shared day (GAME_DESIGN 26).
+    /** Errands on a board besides the gan: one for each digit key. */
+    versusTasks: 9,
+    /** Metres of road from the spawn to each door of a board, dealt in this order, and to the gan. */
+    versusLegs: [350, 500, 650, 800, 950, 425, 575, 725, 875],
+    versusGanLegM: 900,
+    /** A driver reports to the others this often, and a board that is up on the move is priced again this often. */
+    versusSendS: 0.15,
+    versusRefreshS: 1.5,
+    versusInboxMax: 512,
+
     // First minute (GAME_DESIGN 19).
     beatWindowM: 60,
     /** Most a staged car stands in its lane on errand 1. */

@@ -1730,3 +1730,292 @@ button {
   direction: ltr;
   text-align: left;
 }
+
+/* A shared day: the lobby, the board, the other driver's line, the verdict (js/ui/versus.js) */
+.title-online {
+  position: absolute;
+  bottom: 4.7em;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 1.05em;
+  font-weight: 700;
+  color: #fff;
+}
+
+.scr-lobby {
+  /* Built before the title, so that its keys come first, and drawn over it. */
+  z-index: 4;
+  background: rgba(21, 18, 28, 0.97);
+}
+
+.lobby-panel {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 46em;
+  max-width: calc(100% - 4em);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.9em;
+  text-align: center;
+}
+
+.lobby-title {
+  font-size: 3em;
+  color: var(--sun);
+  --stroke: 0.1em;
+}
+
+.lobby-line, .lobby-note {
+  font-size: 1.1em;
+  font-weight: 700;
+  color: #fff;
+}
+
+.lobby-note { font-size: 0.9em; color: #c9d2de; }
+
+.lobby-choices {
+  display: flex;
+  gap: 2em;
+  margin-top: 0.6em;
+}
+
+.lobby-choice {
+  padding: 0.5em 1em 0.6em;
+  font-size: 1.5em;
+  color: var(--ink);
+  background: var(--paper);
+  border: 0.14em solid var(--ink);
+  border-radius: 0.6em;
+  box-shadow: 0.16em 0.2em 0 #000;
+}
+
+.lobby-code-label {
+  font-size: 0.9em;
+  color: #c9d2de;
+  letter-spacing: 0.05em;
+}
+
+.lobby-code {
+  margin-top: 0.1em;
+  padding: 0.1em 0.5em 0.15em;
+  font-size: 5em;
+  line-height: 1.1;
+  letter-spacing: 0.22em;
+  text-indent: 0.22em;
+  color: var(--ink);
+  background: var(--sun);
+  border: 0.06em solid var(--ink);
+  border-radius: 0.2em;
+  box-shadow: 0.06em 0.08em 0 #000;
+  font-variant-numeric: tabular-nums;
+}
+
+.lobby-status {
+  min-height: 1.3em;
+  font-size: 1.2em;
+  font-weight: 700;
+  color: var(--leaf);
+}
+
+.lobby-status.bad { color: var(--tomato); }
+
+.lobby-start {
+  font-size: 1.9em;
+  color: var(--sun);
+  --stroke: 0.1em;
+  animation: start-beat 1.1s ease-in-out infinite;
+}
+
+.lobby-back {
+  font-size: 1.1em;
+  color: #fff;
+}
+
+/* The board. Parked, it has the middle of the frame. On the move it stands at the side, so the road stays in view. */
+.board {
+  position: absolute;
+  top: 8.2em;
+  left: 50%;
+  width: 40em;
+  box-sizing: border-box;
+  margin-left: -20em;
+  padding: 0.7em 0.9em 0.8em;
+  pointer-events: auto;
+  background: var(--paper);
+  color: var(--ink);
+  border: 0.24em solid var(--ink);
+  border-radius: 1em;
+  box-shadow: 0.35em 0.45em 0 var(--ink);
+  animation: card-in 0.22s ease-out;
+}
+
+.board.driving {
+  top: 9.5em;
+  left: auto;
+  right: 1em;
+  margin-left: 0;
+  width: 30em;
+  font-size: 0.8em;
+  opacity: 0.94;
+}
+
+.board-title {
+  font-size: 1.5em;
+  text-align: center;
+}
+
+.board-rows {
+  margin-top: 0.4em;
+  display: flex;
+  flex-direction: column;
+  gap: 0.22em;
+}
+
+.board-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6em;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.22em 0.5em 0.26em;
+  text-align: start;
+  font-size: 1em;
+  font-weight: 700;
+  background: #fff;
+  border: 0.1em solid var(--ink);
+  border-radius: 0.45em;
+}
+
+.board-row.picked { background: #dff7c9; }
+
+.board-row.mine, .board-row.theirs, .board-row.locked, .board-row.noRoad {
+  background: transparent;
+  border-color: rgba(21, 18, 28, 0.25);
+  color: rgba(21, 18, 28, 0.5);
+  cursor: default;
+}
+
+.board-row.mine .board-name, .board-row.theirs .board-name { text-decoration: line-through; }
+
+.board-key {
+  flex: none;
+  min-width: 1.3em;
+  text-align: center;
+}
+
+.board-row.mine .board-key, .board-row.theirs .board-key, .board-row.locked .board-key, .board-row.noRoad .board-key { visibility: hidden; }
+
+.board-what {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.board-name {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.board-dist, .board-pay, .board-award {
+  flex: none;
+  min-width: 4.2em;
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+
+.board-pay { color: #12863a; }
+.board-award { color: #9a6a00; }
+
+.board-note {
+  flex: none;
+  font-size: 0.78em;
+  color: #b3261a;
+}
+
+.board-row.mine .board-note, .board-row.theirs .board-note, .board-row.locked .board-note, .board-row.noRoad .board-note { color: inherit; }
+
+.board-keys {
+  margin-top: 0.5em;
+  text-align: center;
+  font-size: 0.85em;
+  font-weight: 700;
+  color: #6c5f4a;
+}
+
+/* The other driver, under the money */
+.hud-versus {
+  position: absolute;
+  top: 6.1em;
+  left: 1em;
+  display: flex;
+  align-items: baseline;
+  gap: 0.5em;
+  direction: ltr;
+  padding: 0.15em 0.55em 0.22em;
+  font-size: 0.95em;
+  color: #fff;
+  background: var(--ink-soft);
+  border-radius: 0.5em;
+}
+
+.rtl .hud-versus { direction: rtl; }
+
+.no-hud .hud-versus { display: none; }
+
+.hud-versus-them { color: #d7b6ff; }
+.hud-versus-money { color: #d7b6ff; font-variant-numeric: tabular-nums; }
+.hud-versus-left { color: var(--sun); }
+.hud-versus-hint { font-size: 0.85em; font-weight: 700; }
+
+/* The verdict, over the licence */
+/* Between the licence and the restart line, which is the one clear band on that screen. */
+.end-versus {
+  position: absolute;
+  z-index: 4;
+  top: 58%;
+  left: 50%;
+  transform: translateX(-50%);
+  min-width: 26em;
+  padding: 0.5em 1.2em 0.6em;
+  text-align: center;
+  background: var(--paper);
+  color: var(--ink);
+  border: 0.2em solid var(--ink);
+  border-radius: 0.9em;
+  box-shadow: 0.3em 0.36em 0 var(--ink);
+}
+
+.end-versus-verdict { font-size: 1.7em; }
+.end-versus[data-verdict="WON"] .end-versus-verdict { color: #12863a; }
+.end-versus[data-verdict="LOST"] .end-versus-verdict { color: #b3261a; }
+
+.end-versus-rows {
+  margin-top: 0.2em;
+  display: flex;
+  justify-content: center;
+  gap: 2.5em;
+}
+
+.end-versus-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5em;
+}
+
+.end-versus-label { font-size: 0.85em; color: #6c5f4a; }
+.end-versus-value { font-size: 1.5em; font-variant-numeric: tabular-nums; }
+
+.end-versus-note {
+  font-size: 0.9em;
+  font-weight: 700;
+  color: #6c5f4a;
+}
+
+.board-place { font-weight: 700; color: #6c5f4a; }
+.board-row.mine .board-place, .board-row.theirs .board-place, .board-row.locked .board-place { color: inherit; }

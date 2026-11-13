@@ -435,7 +435,9 @@
     // The parking view shows the bay in the top of the frame, right where this card sits. The minimap keeps the door marked.
     dom.chip.classList.toggle('parking-view', parking);
     var lang = TLV.ui.strings.lang();
-    u().setText(dom.chipIndex, t('hud.errand', { n: e.index + 1, total: 7 }));
+    // On a shared day the count is of the board, not of a day's seven.
+    var shared = u().versus.errandCount(S);
+    u().setText(dom.chipIndex, t('hud.errand', shared || { n: e.index + 1, total: 7 }));
     u().setText(dom.chipText, e.text[lang] || e.text.en);
   }
 
