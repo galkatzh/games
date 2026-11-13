@@ -74,6 +74,17 @@ async function open(params, opts = {}) {
     throw new Error(`${what}: not in ${seconds} sim seconds. ${JSON.stringify(await state(page))}`);
   }
 
+  /**
+   * A key the sim reads, such as Enter at the end of a day. input.js forgets a tap when its window loses focus, and with two pages in
+   * one browser the next call to the other page can do just that. So the key is held down across a tick of its own page.
+   */
+  async function tap(page, code) {
+    await page.bringToFront();
+    await page.keyboard.down(code);
+    await page.evaluate(() => TLV.debug.step(2));
+    await page.keyboard.up(code);
+  }
+
   /** Draws a UI frame on a page, so the DOM is what the sim now says. */
   const frame = (page) => page.evaluate(() => TLV.ui.frame(TLV.app.S, 1, 0.016));
 
@@ -88,7 +99,7 @@ async function open(params, opts = {}) {
     };
   });
 
-  return { browser, a, b, pages, logs, run, until, flush, frame, state, close: () => browser.close() };
+  return { browser, a, b, pages, logs, run, until, flush, tap, frame, state, close: () => browser.close() };
 }
 
 /** Reads a node's text, or null when it is hidden or not there. */

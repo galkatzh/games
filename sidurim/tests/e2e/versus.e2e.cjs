@@ -161,15 +161,15 @@ async function main() {
       await shot(b, 'versus_end_lost');
 
       // One asks for another day and waits. When the other asks too, it starts for both, with a new board.
-      // The key is read by the next tick, as any key is.
-      await a.keyboard.press('Enter');
+      // The key is read by a tick, as any key the sim reads is.
+      await T.tap(a, 'Enter');
       await T.run(10);
       assert.strictEqual((await T.state(a)).ready, true);
       for (const page of [a, b]) await T.frame(page);
       assert.strictEqual((await T.state(a)).phase, 'RUN_END');
       assert.match(await text(a, '.end-restart'), /READY\. WAITING FOR THE OTHER DRIVER\./);
       assert.strictEqual(await text(b, '.end-versus-note'), 'The other driver wants another day.');
-      await b.keyboard.press('KeyR');
+      await T.tap(b, 'KeyR');
       await T.run(10);
       for (const page of [a, b]) {
         const s = await T.state(page);
