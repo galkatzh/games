@@ -144,6 +144,7 @@ js/sim/player/collide.js                       WP-PLAYER
 js/sim/player/foot.js                          WP-PLAYER
 js/sim/player/bots.js                          WP-PLAYER
 js/input/input.js                              WP-PLAYER
+js/net/net.js                                  WP-NET
 js/sim/traffic/tune.js                         WP-TRAFFIC
 js/sim/traffic/pool.js                         WP-TRAFFIC
 js/sim/traffic/idm.js                          WP-TRAFFIC
@@ -172,6 +173,7 @@ js/sim/game/knife.js                           WP-GAME
 js/sim/game/fairness.js                        WP-GAME
 js/sim/game/incidents.js                       WP-GAME
 js/sim/game/director.js                        WP-GAME
+js/sim/game/versus.js                          WP-GAME
 js/sim/game/flow.js                            WP-GAME
 js/render/tune.js                              WP-RENDER
 js/render/coords.js                            WP-RENDER
@@ -203,10 +205,12 @@ js/ui/strings.js                               WP-UI
 js/ui/hud.js                                   WP-UI
 js/ui/minimap.js                               WP-UI
 js/ui/cards.js                                 WP-UI
+js/ui/versus.js                                WP-UI
 js/ui/menus.js                                 WP-UI
 js/ui/bubbles.js                               WP-UI
 js/ui/audio.js                                 WP-UI
 js/ui/debug_overlay.js                         WP-UI
+js/ui/touch.js                                 WP-UI
 js/ui/ui.js                                    WP-UI
 content/index.js                               WP-CORE
 content/tlv_center/errands.js                  WP-GAME
@@ -269,7 +273,8 @@ Generated or hand-added directories:
 | WP-PEDS | Pedestrians, two-wheelers | World |
 | WP-GAME | Flow, errands, nav, score, director, incidents, parking contest, rival, rage, knife, attacker AI, errand content | All sim APIs |
 | WP-RENDER | Scene, city mesh, textures, vehicle and character meshes, camera, effects, storefront and landmark registries, pack tool | Read contract |
-| WP-UI | HUD, minimap, menus, cards, speech bubbles, audio, debug overlay | Read contract, events |
+| WP-UI | HUD, minimap, menus, cards, speech bubbles, audio, debug overlay, the lobby and board of a shared day | Read contract, events |
+| WP-NET | The room of a shared day: joining by code, the transport, the vendored Trystero bundle | `TLV.game.versus` (section 13.5) |
 
 **Implementation order.** Packages are designed to run in parallel. If an orchestrator can sequence them, start WP-CORE
 and WP-MAP first, since everything tests against them. While a dependency is missing, code to this contract and test
@@ -377,18 +382,19 @@ TLV.manifest = {
     'js/sim/peds/tune.js','js/sim/peds/pool.js','js/sim/peds/walk.js','js/sim/peds/cross.js','js/sim/peds/riders.js','js/sim/peds/peds.js',
     'js/sim/game/tune.js','js/sim/game/nav.js','js/sim/game/errands.js','js/sim/game/score.js','js/sim/game/rage.js',
     'js/sim/game/rival.js','js/sim/game/parking.js','js/sim/game/attacker.js','js/sim/game/knife.js',
-    'js/sim/game/fairness.js','js/sim/game/incidents.js','js/sim/game/director.js','js/sim/game/flow.js'
+    'js/sim/game/fairness.js','js/sim/game/incidents.js','js/sim/game/director.js','js/sim/game/versus.js',
+    'js/sim/game/flow.js'
   ],
   browser: [
-    'js/input/input.js',
+    'js/input/input.js','js/net/net.js',
     'js/render/tune.js','js/render/coords.js','js/render/atlas.js','js/render/assets.js','js/render/mesh_format.js',
     'js/render/sky.js','js/render/ground.js','js/render/roads.js',
     'js/render/city/recipes.js','js/render/city/styles.js','js/render/city/facades.js','js/render/city/shells.js',
     'js/render/city/details.js','js/render/city/skyline.js','js/render/city/chunks.js',
     'js/render/signs.js','js/render/storefronts.js','js/render/landmarks.js','js/render/vehicles.js','js/render/people.js',
     'js/render/signal_heads.js','js/render/effects.js','js/render/camera.js','js/render/rearview.js','js/render/renderer.js',
-    'js/ui/tune.js','js/ui/strings.js','js/ui/hud.js','js/ui/minimap.js','js/ui/cards.js','js/ui/menus.js',
-    'js/ui/bubbles.js','js/ui/audio.js','js/ui/debug_overlay.js','js/ui/ui.js',
+    'js/ui/tune.js','js/ui/strings.js','js/ui/hud.js','js/ui/minimap.js','js/ui/cards.js','js/ui/versus.js','js/ui/menus.js',
+    'js/ui/bubbles.js','js/ui/audio.js','js/ui/debug_overlay.js','js/ui/touch.js','js/ui/ui.js',
     'js/app/main.js'
   ]
 };
@@ -1197,7 +1203,7 @@ Mode meanings:
 
 `'CRUISE','RED_RUN','TAILGATE','NOSE_IN','OVERTAKE_OUT','OVERTAKE_PASS','CUT_IN','PHANTOM_STOP',`
 `'DROP_APPROACH','DROPPED','PULLOUT','BUS_APPROACH','BUS_STOPPED','BUS_PULLOUT','DOUBLE_PARK','REVERSE_FOR_SPOT',`
-`'DOOR_OPEN','PARK_RACE','PARK_HOLD','RIVAL_BLOCK','RIVAL_STANDOFF','TOWED','PULL_OVER'`
+`'DOOR_OPEN','PARK_RACE','PARK_HOLD','RIVAL_BLOCK','RIVAL_STANDOFF','TOWED','PULL_OVER','WRONG_WAY'`
 
 `TLV.const.BEHAVIOURS` lists them. Each except `CRUISE` must have a timeout that returns to `CRUISE` or despawns. `HONK` in
 GAME_DESIGN 9 is an action any car can take, not an FSM state: it sets `Vehicle.horn` and emits `traffic.honk`.
@@ -1555,6 +1561,15 @@ nothing.
 | `run.start` | GAME | RENDER; UI; AUDIO | `{ seed }` |
 | `run.end` | GAME | UI; AUDIO | `{ reason, money, rank, stats }`. `rank` is a key |
 | `bubble` | TRAFFIC, PEDS, GAME | UI | `{ who: 'veh'\|'ped', id, text, ttl }`. Text is symbols only. This is the only path for speech bubbles |
+| `versus.start` | GAME | none | `{ round, tasks }`. A shared day began (section 13.5). `run.start` came just before it |
+| `versus.peer` | GAME | UI | `{ id, joined }`. A driver entered or left the room, or said which protocol they speak |
+| `versus.pick` | GAME | none | `{ task, defId }`. This driver picked a row of the board |
+| `versus.done` | GAME | UI | `{ task, defId, by, mine }`. A row is done, by this driver or another |
+| `versus.taken` | GAME | UI | `{ task, defId, by }`. The row this driver was on the way to was done by another, and the errand was dropped |
+| `versus.unlock` | GAME | UI | `{ task }`. Only the gan is left, and it can be picked |
+| `versus.void` | GAME | UI | `{ task, defId }`. This driver's park lost a photo finish, and what it paid was taken back |
+| `versus.ended` | GAME | UI | `{ id, reason, money }`. Another driver's day ended |
+| `versus.ready` | GAME | none | `{ self }`. A driver asked for another day together |
 
 ---
 
@@ -1850,6 +1865,14 @@ TLV.foot.applyHit(S)                // stumble and invulnerability per GAME_DESI
 // bots.js
 TLV.bots.create(name, opts) -> controlSource(S) -> ControlState
    // names: 'idle','patrol','chaos','braker','errands'. All randomness comes from S.rng.bot
+
+// input.js: the on-screen controls (js/ui/touch.js calls these; input.sample merges them, so a touch drive replays like any other)
+TLV.input.touch.stick(x, y)         // finger offset over the stick's radius, each -1..1, y down. (0,0) is no finger
+TLV.input.touch.hold(name, on)      // 'space','horn','hazard','recover','interact'. A press also shows for one sample
+TLV.input.touch.tap(name)           // 'space','horn','interact': one sample
+TLV.input.touch.release()           // every finger off
+   // Stick forward: throttle from 0.10 rising as the square, past a 0.18 dead zone. Back: brake. Sideways: steer with a soft centre.
+   // On foot: the stick's angle, full from 70% out, through the camera's yaw. Touch never sets start or restart.
 ```
 
 Binding on WP-PLAYER:
@@ -2147,6 +2170,7 @@ aim.y)` at `aim.tImpact`, clamped to `[0, 1.3 * lane vmax]`. Every `holdS` is su
 | `DROP_OFF` | `holdS`, `door: 'traffic'\|'curb'`, `passenger: bool` | Pull half to curb, hazards, door, spawn via `TLV.peds.spawn` |
 | `DOUBLE_PARK` | `holdS` | Stop, hazards, driver gone |
 | `REVERSE_FOR_SPOT` | `distM`, `aim?` | Reverse down the lane |
+| `WRONG_WAY` | `aim?`, `distM?`, `holdS?` | A car on a one-lane one-way lane turns to face the traffic and drives against it, as a pose script listed on the lane as an oncoming obstacle. It stops short of any body, stands `holdS`, backs out to the lane's end, then backs across the junction into a street leading to it and is a `CRUISE` car again. With nowhere to back into it stands with hazards and despawns |
 | `BUS_PULLOUT` | `aim?` | Leave stop with no blinker |
 | `DOOR_OPEN` | `side: 'traffic'\|'curb'`, `holdS` | Requires a `PARKED` vehicle from `materializeParked`. The door adds a 1.0 x 0.2 m box, centred in the vehicle frame at `(+0.25 * length, ±(width/2 + 0.5))`, long axis lateral. `TLV.collide` treats it as part of the vehicle |
 | `PULLOUT` | | Requires a `PARKED` vehicle from `materializeParked`. Signals and leaves through `NOSE_IN`. The spot becomes `FREE` once the body is clear |
@@ -2168,6 +2192,7 @@ aim.y)` at `aim.tImpact`, clamped to `[0, 1.3 * lane vmax]`. Every `holdS` is su
 | `JAYWALK` | `x`, `y`, `toX`, `toY`, `aim?` | Mid-block crossing |
 | `SCOOTER_SALMON` | `laneId`, `s`, `aim?` | Rides against a one-way lane |
 | `DELIVERY_POP` | `xingId`, `aim?` | Rider leaves sidewalk into road at 6-9 m/s |
+| `ROAD_STROLL` | `laneId`, `s`, `distM?`, `dwellS?` | Walks `distM` down the lane the way it runs, near its middle, at 0.8 m/s. A car on the lane within 15 m is ignored for `dwellS`, then they move aside slowly and leave |
 | `SAVE_BAY` | `spotId` | Stands in the bay, gestures, leaves when the bay is taken. Stays in `S.peds` as `kind: 'saver'` |
 | `INSPECT` | `x`, `y` | Inspector walks to the point, writes, leaves |
 | `CANCEL` | | Back to `WALK` |
@@ -2182,7 +2207,7 @@ Weighted walk and spawn weight by class: primary 5, secondary 4, tertiary 3, unc
 ```js
 TLV.q.push(['incident', {
   id: 'BUS_PULLOUT', minHeat: 0, weight: 3, cooldownS: 30,
-  anchor: 'busStop',     // 'junction'|'busStop'|'parkedCar'|'leadCar'|'crossing'|'oneWayEdge'|'tailSlot'|'sideStreet'
+  anchor: 'busStop',     // 'junction'|'busStop'|'parkedCar'|'leadCar'|'crossing'|'oneWayEdge'|'tailSlot'|'sideStreet'|'smallOneWay'|'smallStreet'
   telegraph: { s: 1.2, cue: 'noseOut' },
   tta: [2.2, 3.2],
   escape: 'laneOrBrake', // 'brake'|'laneOrBrake'|'none'
@@ -2191,7 +2216,76 @@ TLV.q.push(['incident', {
 }]);
 ```
 
-The 15 shipped definitions live in `js/sim/game/incidents.js` (they are code-adjacent) and are pushed in `TLV.game.register()`.
+The 17 shipped definitions live in `js/sim/game/incidents.js` (they are code-adjacent) and are pushed in `TLV.game.register()`.
+
+### 13.5 A shared day: `TLV.game.versus` and `TLV.net`
+
+GAME_DESIGN 26. Two or more drivers play the same board of errands, each in a whole sim of their own. Nothing of a street is shared:
+not traffic, not people, not the clock. Only the board is, and where the others are. So the sim stays deterministic between the
+messages it is handed, and it never touches a network.
+
+**State.** `S.versus` is made on first use and outlives a run, which `S.game` does not: `{ on, linked, self, peers, inbox, outbox,
+round, board, startTick, pick, count, open, ready, options }`. `on` means the board decides what comes next, not the plan. A board
+row is `{ id, defId, poi, x, y, edge, name, finale, by, t }`: a definition at a door, `by` the id of whoever parked there, or null.
+A shared day uses no phase of its own. Choosing is `CARD`, or `DRIVE` on the move, with `S.game.errand` null.
+
+**Sim side (`js/sim/game/versus.js`, WP-GAME).**
+
+```js
+TLV.game.versus.active(S) -> bool
+TLV.game.versus.board(S) -> ?[{ id, defId, name, text, finale, x, y, state, dist, pay, award, heading, by, picked }]
+   // state: 'open' | 'locked' (the gan, while another row is open) | 'noRoad' | 'mine' | 'theirs'. dist, pay and award are the road
+   // from where the driver stands, the pay of a GOOD park, and the clock seconds: the figures of GAME_DESIGN 7 and 8.4.
+TLV.game.versus.view(S) -> { on, linked, self, host, open, pick, count, left, total, round, ready, peers: [...] }
+TLV.game.versus.pick(S, rowId) -> bool          // only while the board is up
+TLV.game.versus.reconsider(S) -> bool           // puts the board up in DRIVE or SEARCH, with the errand kept until another is picked
+TLV.game.versus.keep(S) -> bool                 // takes it down again
+TLV.game.versus.requestStart(S) -> bool         // from TITLE or RUN_END, with company: the dealer deals, anyone else asks the dealer
+// For whatever carries the messages:
+TLV.game.versus.attach(S, selfId)  .detach(S)  .peerJoined(S, id)  .peerLeft(S, id)
+TLV.game.versus.receive(S, fromId, msg)         // kept until the next tick
+TLV.game.versus.drain(S) -> [{ to: ?id, msg }]  // what is waiting to be sent, to one peer or to all
+```
+
+`flow.preUpdate` calls `versus._tick` first, so a message changes the sim only at a tick's edge. `flow.startRun(S, { versus: { round,
+rows } })` starts a shared day. After `PAYOUT` or `RESOLVE` flow clears the errand and hands over to the board in place of the plan.
+`flow._dropErrand` lets go of an errand on the way to it. The dealer is the driver with the lowest id, so nobody has to be told. With
+a day on it is the lowest among those in it (`playing`, by their own reports): a driver who came into the room meanwhile sees the
+others `busy`, cannot start anything, is not waited for, and is dealt in with the next board.
+
+**Messages.** JSON objects with a kind `k`. Anything else is dropped, and so is a field that is not what it should be.
+
+| `k` | Fields | Meaning |
+|---|---|---|
+| `hello` | `v` | The sender's protocol number, on meeting. A peer with another number is in the room and not in the game |
+| `go` | | To the dealer: start a day |
+| `start` | `v, round, rows, difficulty` | From the dealer: the board, as rows of `errands._boardRow`. Taken only with no day on, from a peer on this protocol, for a round later than the last |
+| `pick` | `r, task` | The sender is on the way to a row |
+| `done` | `r, task, t` | The sender parked at a row, `t` ticks into their own day |
+| `state` | `r, x, y, h, s, m, n, p, e, w, on` | Pose, speed, money, rows done, pick, ended and why. About 7 a second. Only the newest one waiting is kept |
+| `again` | `r` | Ready for another day. The dealer starts one when every driver has ended and asked |
+
+**A row is done once.** Each sim marks its own park at once and sends `done`. Two parks at one row before either hears of the
+other are settled the same way on both sides: the smaller `t` keeps it, then the lower id. The other takes back the pay and the
+clock it took (`versus.void`). `t` is whole ticks since each driver's own day began, which is the only clock two browsers share
+with no server to ask, and it starts one message later for whoever was dealt to.
+
+**The room (`js/net/net.js`, WP-NET, browser only).** `TLV.net.open(S, code)`, `.close(S)`, `.state()`, `.frame(S)`, `.makeCode()`,
+`.cleanCode(text)`. It joins a room named by a four-letter code, the map and the protocol number, and moves messages between the
+transport and the calls above. It knows nothing of what they mean. Two transports implement
+`join(name, handlers, opts) -> Promise<{ send(msg, to), leave() }>`:
+
+- `trystero`: `vendor/trystero.min.js`, Trystero 0.27.0 with its Nostr strategy, as one classic script that sets `window.Trystero`.
+  Peers meet through public relays and then talk over a WebRTC data channel. The script is added to the page only when a room is
+  opened, so `index.html` still loads nothing from the network and a day alone still runs from `file://`, offline. The identity is
+  `'none'`: nothing is kept in the browser, and the app id says nothing about who is playing.
+- `local`: a `BroadcastChannel` between the tabs of one browser. No network. It is how `tests/e2e/versus.e2e.cjs` runs two drivers.
+
+`tests/e2e/online.e2e.cjs` runs the real bundle against a relay on localhost (`tests/e2e/lib/nostr_relay.cjs`), so the WebRTC
+path is exercised without the internet. The public relays themselves are not reached by any test.
+
+**UI (`js/ui/versus.js`, WP-UI).** The lobby, the board, the other driver's line and the verdict. It is the one UI file that calls
+`TLV.game.versus` and `TLV.net`, as `menus.js` is the one that calls `setDifficulty`, and a test holds the rest to that.
 
 ---
 
@@ -2391,7 +2485,12 @@ Interpolate: `lerp(px, x, alpha)`, and `h` with `wrapPi`.
 
 ### 15.2 Writes
 
-Render and UI write nothing into `S`. Input is the only path from the browser to the sim, through `ControlState`.
+Render and UI write nothing into `S`. Input is the only path from the browser to the sim, through `ControlState`. The on-screen stick
+and buttons of a touch screen are input too: `js/ui/touch.js` owns the fingers and hands them to `TLV.input.touch`, which `input.sample`
+merges after the keys and the pad. There are two choices
+made on a screen as the exceptions: the title's difficulty (`TLV.game.setDifficulty`), and a shared day's lobby and board
+(`TLV.game.versus` and `TLV.net`, called only by `js/ui/versus.js`, section 13.5). Render also reads `S.versus.peers` for the other
+drivers' cars, which are drawn and are no `Vehicle`.
 
 ### 15.3 Rendering implementation requirements
 
@@ -2473,6 +2572,10 @@ All optional. Parsed by `TLV.config.parse`. Browser and `createTLV({ params })` 
 | `mute` | 0, 1 | 0 | Mute audio | UI |
 | `hud` | 0, 1 | 1 | Hide HUD for clean screenshots | UI |
 | `timescale` | number | 1 | Multiplies loop speed inside `TLV.loop`. Touches neither `DT` nor `S.timeScale` | CORE |
+| `net` | `trystero`, `local` | `trystero` | How the drivers of a shared day reach each other (section 13.5). `local` joins the tabs of one browser with a `BroadcastChannel` and no network | NET |
+| `room` | code | none | Opens the lobby and joins this room at once | UI |
+| `relay` | `ws://` or `wss://` URLs, comma separated | none | Signaling relays to use in place of Trystero's public ones | NET |
+| `touch` | `auto`, `on`, `off` | `auto` | The on-screen stick and buttons (`js/ui/touch.js`). `auto` shows them on a touch screen, and keys, a mouse or a pad hide them again | UI |
 
 ### 16.2 `TLV.debug`
 
@@ -2737,7 +2840,7 @@ BRIEF tone rules, and a final report lists anything decided under the "missing c
 6. `knife.test.mjs`: every stage in order; `DRAGGED` at 2.5 s; `lead = 9 - 3t`; all four exits reachable from scripted input;
    attacker 5.7 or 6.6 m/s; clock frozen; controls locked, so `player.hitPed` cannot fire in `STANDOFF` or `DOOR_TUG`.
 7. Pedestrian hit: all penalties; second ends the run; hitting the attacker gives no benefit by any path.
-8. All 15 incidents stage on `tlv_center` and pass the fairness gate; `braker` meets 95%.
+8. All 17 incidents stage on `tlv_center` and pass the fairness gate; `braker` meets 95%.
 9. All `TLV.debug` hooks in 16.2 work from `page.evaluate`.
 10. All run-end reasons are reachable, and restart works. `startRun` follows the order in 12.7, and `?notitle=1` delivers
     `run.start` to a frame consumer.

@@ -165,6 +165,64 @@ test('SCOOTER_SALMON: an AI car ahead makes the rider brake, and get off the roa
   assert.strictEqual(S.pedsys.contacts, 0);
 });
 
+test('ROAD_STROLL: walks down the lane the way it runs, near the middle, at a stroll, and then goes back to the kerb', () => {
+  const { TLV, S } = mini();
+  setPlayer(S, 12, -80);
+  const log = record(S, ['ped.stepOut']);
+  const W = S.world;
+  const lane = zebraLanes(S).north;
+  const at = TLV.world.lanes.pointAt(W, lane.id, 150, {});
+  const off = lane.width / 2 - 0.3;
+  const p = person(TLV, S, { kind: 'walker', x: at.x + Math.sin(at.h) * off, y: at.y - Math.cos(at.h) * off });
+  run(TLV, S, 6);
+  assert.strictEqual(TLV.peds.command(S, p, { type: 'ROAD_STROLL', laneId: lane.id, s: 150, distM: 12, dwellS: 3 }), true);
+  assert.ok(until(TLV, S, 6, () => p._p.mode === 'LANE'));
+  assert.deepStrictEqual(log.map((e) => e.state), ['STROLL_ROAD']);
+  assert.strictEqual(p._p.laneDir, 1);
+  assert.ok(Math.abs(p._p.laneLat) <= TLV.tune.peds.strollMidM + 1e-9, 'near the middle of the lane');
+  const s0 = p._p.laneS;
+  run(TLV, S, 120);
+  const went = p._p.laneS - s0;
+  assert.ok(went > 1.2 && went < 2, `${went} m in two seconds`);
+  const out = [];
+  assert.ok(TLV.peds.obstaclesOnLane(S, lane.id, out) >= 1, 'a car on the lane reads them');
+  assert.ok(until(TLV, S, 30, () => p.state === 'WALK'), 'the walk ends');
+  assert.ok(p._p.laneS - s0 <= 12.5);
+});
+
+test('ROAD_STROLL: a car behind is heard only after dwellS, and then they move aside slowly', () => {
+  const { TLV, S } = mini();
+  setPlayer(S, 12, -80);
+  const W = S.world;
+  const lane = zebraLanes(S).north;
+  const at = TLV.world.lanes.pointAt(W, lane.id, 150, {});
+  const p = person(TLV, S, { kind: 'walker', x: at.x, y: at.y });
+  run(TLV, S, 6);
+  assert.strictEqual(TLV.peds.command(S, p, { type: 'ROAD_STROLL', laneId: lane.id, s: 150, distM: 40, dwellS: 3 }), true);
+  assert.ok(until(TLV, S, 6, () => p._p.mode === 'LANE'));
+  // The player's car, standing ten metres behind them on their lane.
+  const back = TLV.world.lanes.pointAt(W, lane.id, p._p.laneS - 10, {});
+  setPlayer(S, back.x, back.y);
+  S.vehicles[0].h = back.h;
+  S.vehicles[0].laneId = lane.id;
+  run(TLV, S, 60 * 2);
+  assert.strictEqual(p._p.aside, false, 'two seconds in, still in no hurry');
+  assert.strictEqual(p.state, 'STROLL_ROAD');
+  assert.ok(until(TLV, S, 3, () => p._p.aside), 'then they hear it');
+  assert.ok(until(TLV, S, 20, () => p.state === 'WALK'), 'and leave the road');
+});
+
+test('ROAD_STROLL is for people on foot, on a lane within reach', () => {
+  const { TLV, S } = mini();
+  const lane = zebraLanes(S).north;
+  const at = TLV.world.lanes.pointAt(S.world, lane.id, 150, {});
+  const r = person(TLV, S, { kind: 'scooter', x: at.x, y: at.y });
+  assert.strictEqual(TLV.peds.command(S, r, { type: 'ROAD_STROLL', laneId: lane.id, s: 150 }), false, 'a rider');
+  const w = person(TLV, S, { kind: 'walker', x: at.x, y: at.y });
+  assert.strictEqual(TLV.peds.command(S, w, { type: 'ROAD_STROLL', laneId: -1, s: 150 }), false, 'no lane');
+  assert.strictEqual(TLV.peds.command(S, w, { type: 'ROAD_STROLL', laneId: lane.id, s: 20 }), false, 'out of reach');
+});
+
 test('SCOOTER_SALMON and DELIVERY_POP are for riders', () => {
   const { TLV, S } = mini();
   const w = person(TLV, S, { kind: 'walker', x: 0, y: -100 });

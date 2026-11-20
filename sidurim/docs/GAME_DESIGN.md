@@ -337,6 +337,7 @@ on the player's path (section 11). Concurrency caps apply to ambient only.
 | `BUS_STOPPED`, `BUS_PULLOUT` | "aggressively joining" | Every bus at each stop on its lane | Stops 10-15 s half out of lane, then noses out with no blinker | 4% of spawned cars are buses |
 | `DOUBLE_PARK` | "stop for unclear reasons" | 0.01 per car per minute | Hazards on, driver gone, blocks the lane 20-40 s, subject to the no-bypass cap below | Same guards as `PHANTOM_STOP`. Max 2 |
 | `REVERSE_FOR_SPOT` | "very aggressively" | Staged only | Reverses 30 m down a live lane, reverse lights on | Guarded by fairness gate |
+| `WRONG_WAY` | "against the driving direction in small one way streets" | Staged only | Drives against a one-lane one-way street with high beams, stops nose to nose with whoever it meets, honks for 3 s, then backs out tail first and drives off | Cars only. Stops short of every body. Ends inside 40 s |
 | `DOOR_OPEN` | Flavour | Staged only | A parked car's traffic-side door opens into the lane | 2-3 s |
 
 **Rules that override everything:**
@@ -364,7 +365,7 @@ are sparse [M, about 12% of ways].
 | `CROSS_SLOW` | "walk slowly" | 12% of crossers | Crosses at 0.6 m/s and may pause mid-road 1-3 s | Dwell capped at 25 s, then hurries off |
 | `JAYWALK` | "cross the road unexpectedly" | 3% per minute per walker near a road | Leaves the sidewalk mid-block | Ambient walkers hop back if car TTC falls under 1 s |
 | `RED_CROSS` | "cross on red lights" | 15% of waiters, or after 25 s | Crosses against the signal | Same guards |
-| `STROLL_ROAD` | "etc." | 2% of walkers on `living_street` or service roads | Walks down the road edge | Moves aside slowly |
+| `STROLL_ROAD` | "pedestrians walking slowly on the road" | 2% of walkers on `living_street`, service roads and one-lane one-way residential streets, and staged as `ROAD_STROLL` | Walks down the road edge at 0.8 m/s. Staged: down the middle of the lane, back to the traffic | Moves aside slowly. Staged: only 3 s after a car comes up behind |
 | `DROPPED` | "dropping passengers off" | Spawned by `DROPPED` car | Gets out on the traffic side, walks to curb | |
 | `FLEE` | | Near a crash | Hurries away 3 s | |
 | `STUMBLE` | | After being hit | Sits, stands, shakes head | Non-graphic, 4 s, then leaves |
@@ -435,8 +436,10 @@ Soak test: a headless brake-only bot must avoid at least 95% of staged incidents
 | `MERGE_WEDGE` | `NOSE_IN` | side street | Nose creeps, accepts a 4 m gap | 2.2-3.0 | 0 | no |
 | `DOUBLE_PARK` | `DOUBLE_PARK` | lead car | Hazards, driver gone | 3.0+ | 0 | yes |
 | `REVERSE_FOR_SPOT` | `REVERSE_FOR_SPOT` | lead car | Reverse lights, 30 m backwards | 2.2-3.0 | 0.3 | yes |
+| `WRONG_WAY_DRIVER` | `WRONG_WAY` | small one-way street | High beams coming the wrong way, then the horn | 3.0-4.0 | 0.15 | no |
+| `ROAD_STROLL` | `STROLL_ROAD` | small one-way street | Walker steps off the kerb and strolls down the lane, back turned | 3.5-4.5 | 0 | yes |
 
-Each incident also has a `cooldownS` of 30 and a selection `weight` of 3 by default.
+Each incident also has a `cooldownS` of 30 and a selection `weight` of 3 by default. `ROAD_STROLL` cools for 60 s, because a street to stroll down is nearly always to hand.
 
 ---
 
@@ -806,7 +809,7 @@ ARCHITECTURE section 17.
 | 16 | "pedestrians try to cross the road unexpectedly" | `JAYWALK`, `ZEBRA_ROULETTE` | Scenario forces each; intent flag precedes stepping out by at least 0.8 s |
 | 17 | "walk slowly" | `CROSS_SLOW`, `SLOW_CROSS` | Crossing speed 0.6 m/s; zone dwell at most 25 s |
 | 18 | "cross on red lights" | `RED_CROSS`, `RED_WALKER` | Pedestrian on road while signal shows no walk phase |
-| 19 | "etc." | `STROLL_ROAD`, scooters, delivery riders, decoy savers | Scenarios for `SCOOTER_SALMON` and `DELIVERY_POP` |
+| 19 | "etc." | `STROLL_ROAD`, `ROAD_STROLL`, `WRONG_WAY_DRIVER`, scooters, delivery riders, decoy savers | Scenarios for `SCOOTER_SALMON`, `DELIVERY_POP`, `WRONG_WAY` and `ROAD_STROLL` |
 | 20 | "Cars may also suddenly stop for unclear reasons" | `PHANTOM_STOP`, `STOP_NO_REASON`, `DOUBLE_PARK` | Lead car decelerates at 4-7 m/s² with no obstacle ahead |
 | 21 | "including dropping passengers off" | `DROPPED`, `DROP_OFF` | Pedestrian spawned on traffic side of a stopped car |
 | 22 | "Importantly, one has to park the car when they arrive" | Errand completes only on `PARKED`; driving past does nothing | Stopping at the door without parking gives no completion |
@@ -844,3 +847,57 @@ ARCHITECTURE section 17.
 3. **Parking kills pace, or a block yields no good bay.** Mitigated by snap capture, staged bays and double-parking. The arming
    rule and the rival profile are arithmetic only: the quality thresholds and the 20-45% loss rate need playtesting.
 4. **The on-foot mode is the riskiest tone.** Keep to section 15.3, and review all copy and art against section 21.
+
+---
+
+## 26. A shared day: two drivers, one list
+
+Added after the single-player game, at the owner's request: "Both players compete for the same tasks. They may choose which one to
+pursue seeing the expected benefit. If a task was completed by one player the other player cannot choose it."
+
+**The room.** On the title, O opens the lobby. One driver opens a room and gets a four-letter code. The other types it. Either starts
+the day. Drivers find each other through Trystero's public signaling relays and then talk browser to browser over WebRTC. There is no
+server of the game's own. More than two can be in a room, and nothing below changes: "the other driver" is whoever is ahead.
+
+**Each driver has a street of their own.** Traffic, pedestrians, incidents, rivals and the clock all run in each browser alone, with
+all the rules of sections 5 to 15. Only the board is shared, and where the others are: their cars are drawn see-through, with a
+purple dot on the minimap, and nothing can touch them. Sharing a street would need a server, or a lockstep sim that waits for the
+slowest browser. The board needs neither.
+
+**The board.** Nine errands and the gan, each at a door of its own, dealt at 350 to 950 m of road from the spawn (the gan at 900 m).
+Milk is always one of them. One driver deals, the lowest id in the room, and sends the board to the rest, so everyone stands the same
+errand at the same door.
+
+**Choosing.** At the start of the day, after each park, and whenever a driver's errand is taken from under them, the board comes up.
+Each open errand shows what it is worth from where that driver stands:
+
+| Shown | Is |
+|---|---|
+| Metres | The road to its door from here |
+| Pay | `(80 + 0.1 * metres) * 1.2`: a GOOD park with no contact, by section 8.4. A PERFECT or spotless one pays more, a bad one less |
+| Seconds | The clock award of section 7 for that road |
+| "The other driver is on the way" | Someone else has picked it and not parked yet |
+
+A digit picks: 1 to 9 for the errands, 0 for the gan. Parked or at the spawn, the phone card then shows as on any day and the car
+pulls out. T puts the board up again on the way to an errand. Picking another row lets the first go, and nothing is lost by looking.
+The clock does not run while the car stands at a card, as on any day. On the move it does, board up or not.
+
+**An errand is done once.** The first driver to park at it has it, and it is struck off every board. A driver on the way there keeps
+driving, with no errand and the board up: "TAKEN. PICK ANOTHER." Two drivers who park at the same door within a network delay of
+each other are settled the same way in both browsers: whoever parked sooner into their own day, and the lower id when level. The
+other one's pay and clock award are taken back.
+
+**The gan is last.** It cannot be picked while any other errand is open. When only it is left, everyone is told, and whoever picks
+the kid up ends the day for all. It keeps the rules the last errand has on any day: no knife, the finale's rage cap, its own Q reach.
+Every other errand takes its heat and its award step from how many that driver has done, capped at the sixth.
+
+**The end.** A driver's day ends as any day does, on the clock, the tow, the knife or a revoked licence, and the rest play on. When
+the board is empty everyone still out ends on `DONE`. The most money wins. A day with a person under the car wins nothing extra: it
+costs what section 8.3 says. The end screen shows both totals and the verdict, or that the other driver is still out. Enter or R
+asks for another day together, and one starts, with a new board, when everyone in the room has ended and asked. A shared day never
+counts as a best day. If the other driver leaves, the day goes on with the board as it stands, and the next one is a day alone.
+A driver who comes into a room with a day already on is told so, waits in the lobby, and is in the next day when it starts.
+
+**What is deliberately not there.** No chat, no names, no account. No collisions between drivers. No pause for both: Esc pauses one
+browser, the other plays on, and what happened meanwhile lands when the first comes back. The window losing focus does not pause a
+shared day, as it does a day alone.

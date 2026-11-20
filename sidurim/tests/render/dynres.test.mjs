@@ -41,14 +41,26 @@ test('a quality the player asked for is theirs, on any GPU, and the ladder stays
   }
 });
 
-test('auto starts a software GPU on low and anything else on high', () => {
+test('auto starts a software GPU on low, a phone or tablet on mobile, and anything else on high', () => {
   const software = [
     'ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)',
     'Google SwiftShader', 'llvmpipe (LLVM 15.0.7, 256 bits)', 'Mesa softpipe', 'Microsoft Basic Render Driver', 'Apple Software Renderer'
   ];
   for (const gpu of software) assert.strictEqual(TLV.render.pickQuality('auto', gpu).name, 'low', gpu);
-  const real = ['ANGLE (Intel, Intel(R) UHD Graphics 620 Direct3D11 vs_5_0 ps_5_0, D3D11)', 'Apple M1', 'Adreno (TM) 640', 'Mali-G78', 'WebKit WebGL', ''];
+  const real = ['ANGLE (Intel, Intel(R) UHD Graphics 620 Direct3D11 vs_5_0 ps_5_0, D3D11)', 'Apple M1', 'Apple GPU', 'WebKit WebGL', ''];
   for (const gpu of real) assert.strictEqual(TLV.render.pickQuality('auto', gpu).name, 'high', gpu);
+  // A phone is known by its finger, not its GPU's name: a Snapdragon laptop reports an Adreno, and an iPhone says 'Apple GPU' as a Mac does.
+  for (const gpu of ['Adreno (TM) 640', 'Mali-G78', 'PowerVR Rogue GE8320', 'Samsung Xclipse 920', 'Immortalis-G715']) {
+    assert.strictEqual(TLV.render.pickQuality('auto', gpu, true).name, 'mobile', gpu);
+    assert.strictEqual(TLV.render.pickQuality('auto', gpu, false).name, 'high', `${gpu} without a touch screen`);
+  }
+  assert.strictEqual(TLV.render.pickQuality('auto', 'Apple GPU', true).name, 'mobile');
+  assert.strictEqual(TLV.render.pickQuality('auto', 'Apple GPU', false).name, 'high');
+  assert.strictEqual(TLV.render.pickQuality('auto', 'Google SwiftShader', true).name, 'low', 'software is low on any device');
+  assert.strictEqual(TLV.render.pickQuality('auto', 'Mali-G78', true).auto, true, 'the ladder runs');
+  for (const name of ['low', 'med', 'high']) assert.deepStrictEqual({ ...TLV.render.pickQuality(name, 'Mali-G78', true) }, { name, auto: false });
+  const mobile = TLV.tune.render.quality.mobile;
+  assert.ok(mobile.pixelRatio <= 1 && mobile.shadow > 0 && mobile.shadow <= 1024 && !mobile.antialias, JSON.stringify(mobile));
 });
 
 test('rungs run from the preset to the floor, in even steps, whatever the display', () => {

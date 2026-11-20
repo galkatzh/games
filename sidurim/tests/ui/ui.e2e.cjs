@@ -448,7 +448,7 @@ async function main() {
       assert.ok(dir.streetLeft >= 0, 'street name stays on screen');
       assert.match(await text(page, '.hud-street'), /[\u0590-\u05FF]/);
       assert.match(await text(page, '.hud-chip-text'), /[\u0590-\u05FF]/);
-      assert.strictEqual(await text(page, '.hud-hp-label'), 'ללא תביעות');
+      assert.strictEqual(await text(page, '.hud-hp-label'), 'היעדר תביעות');
       await shot(page, 'he_drive');
     });
   });
@@ -1685,7 +1685,11 @@ async function main() {
           'incident.telegraph': { id: 1, defId: 'TAILGATE', x: 1, y: 1 }, 'incident.end': { id: 1, defId: 'TAILGATE', outcome: 'AVOIDED' },
           'score.bonus': { id: 'AFTER_YOU', amount: 50, seconds: 5 }, 'score.chain': { n: 2, mult: 1.7, bank: 30 },
           'clock.warn': { level: 2 }, 'run.start': { seed: 1 }, 'run.end': { reason: 'WIN', money: 10, rank: 'NEW_DRIVER', stats: TLV.app.S.game.stats },
-          'bubble': { who: 'veh', id: 0, text: '!', ttl: 1 }
+          'bubble': { who: 'veh', id: 0, text: '!', ttl: 1 },
+          'versus.start': { round: 1, tasks: 10 }, 'versus.peer': { id: 'p2', joined: true }, 'versus.pick': { task: 0, defId: 'milk' },
+          'versus.done': { task: 0, defId: 'milk', by: 'p2', mine: false }, 'versus.taken': { task: 0, defId: 'milk', by: 'p2' },
+          'versus.unlock': { task: 9 }, 'versus.void': { task: 0, defId: 'milk' }, 'versus.ended': { id: 'p2', reason: 'CLOCK', money: 120 },
+          'versus.ready': { self: false }
         };
         const bad = [];
         Object.keys(TLV.ui.EVENTS).forEach((name) => {
@@ -1940,7 +1944,7 @@ async function main() {
       await page.evaluate(() => TLV.ui.setLang('he'));
       await pose('UGLY');
       await lib.frames(page, 3);
-      assert.strictEqual(await text(page, '.hud-prompt'), 'לזחול. ליישר.');
+      assert.strictEqual(await text(page, '.hud-prompt'), 'לאט־לאט. ליישר את ההגה.');
       await shot(page, 'fix_prompt_roll_he');
       await pose('GOOD');
       await lib.frames(page, 3);
@@ -2119,7 +2123,7 @@ async function main() {
       await shot(page, 'way_start');
       await page.evaluate(() => TLV.ui.setLang('he'));
       await lib.frames(page, 3);
-      assert.strictEqual(await text(page, '.tag-way-text'), 'מכאן');
+      assert.strictEqual(await text(page, '.tag-way-text'), 'לכאן');
       await shot(page, 'way_start_he');
       await page.evaluate(() => TLV.ui.setLang('en'));
       let leftWas = Infinity;
@@ -2294,34 +2298,85 @@ async function main() {
     });
   });
 
-  await scenario('round 5: a phone is told it needs a keyboard or gamepad, in its own width, and a desktop is not', async () => {
-    const PHONE = { viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true };
-    await withGame('?seed=5&mute=1', { context: PHONE, init: FAKE_PAD }, async (page) => {
+  await scenario('round 5: a phone sideways is told where the stick is, upright it is asked to turn, and a desktop sees neither', async () => {
+    const LAND = { viewport: { width: 844, height: 390 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true };
+    await withGame('?seed=5&mute=1', { context: LAND, init: FAKE_PAD }, async (page) => {
       await lib.frames(page, 3);
-      assert.strictEqual(await page.evaluate(() => innerWidth), 390, 'the page lays out at the phone\'s width');
+      assert.strictEqual(await page.evaluate(() => innerWidth), 844, 'the page lays out at the phone\'s width');
+      assert.strictEqual(await page.evaluate(() => TLV.ui.touchMode()), true);
       assert.ok(await shown(page, '.title-touch'));
-      assert.match(await text(page, '.title-touch'), /KEYBOARD OR A GAMEPAD/);
-      const box = await page.evaluate(() => { const r = document.querySelector('.title-touch').getBoundingClientRect(); return { l: r.left, r: r.right, fs: parseFloat(getComputedStyle(document.querySelector('.title-touch')).fontSize) }; });
-      assert.ok(box.l >= 0 && box.r <= 390, 'it fits');
-      assert.ok(box.fs >= 16, `and can be read, ${box.fs} px`);
+      assert.match(await text(page, '.title-touch'), /STICK ON THE LEFT/);
+      assert.match(await text(page, '.title-start'), /TAP TO START/);
+      assert.ok(!(await shown(page, '.controls-line')), 'no keycaps a phone does not have');
+      assert.ok(!(await shown(page, '.touch-rotate')));
+      const box = await page.evaluate(() => {
+        const r = document.querySelector('.title-touch').getBoundingClientRect();
+        return { l: r.left, r: r.right, fs: parseFloat(getComputedStyle(document.querySelector('.title-touch')).fontSize) };
+      });
+      assert.ok(box.l >= 0 && box.r <= 844, 'it fits');
+      assert.ok(box.fs >= 11, `and can be read, ${box.fs} px`);
       await shot(page, 'touch_title');
       await page.tap('.lang-btn:last-child');
       await lib.frames(page, 3);
-      assert.match(await text(page, '.title-touch'), /מקלדת או שלט משחק/);
+      assert.match(await text(page, '.title-touch'), /הסטיק משמאל/);
       await shot(page, 'touch_title_he');
+      // A pad being played takes the screen back; one merely paired does not.
       await page.evaluate(() => { __pad.connected = true; });
       await lib.frames(page, 3);
-      assert.ok(!(await shown(page, '.title-touch')), 'a pad paired: the line goes');
-      await page.evaluate(() => { __pad.connected = false; });
+      assert.ok(await shown(page, '.title-touch'), 'a paired pad alone changes nothing');
+      await page.evaluate(() => { __press(0, true); });
       await lib.frames(page, 3);
-      assert.ok(await shown(page, '.title-touch'), 'and back when it leaves');
+      await page.evaluate(() => { __press(0, false); __pad.connected = false; });
+      await page.waitForTimeout(700);
+      await lib.frames(page, 3);
+      assert.ok(!(await shown(page, '.title-touch')), 'a pad pressed: the line goes');
+      // A touch brings it back, and a real key takes it away.
+      await page.touchscreen.tap(420, 60);
+      await lib.frames(page, 3);
+      assert.ok(await shown(page, '.title-touch'), 'and a finger brings it back');
+      await page.waitForTimeout(700);
       await page.keyboard.press('Shift');
       await lib.frames(page, 3);
       assert.ok(!(await shown(page, '.title-touch')), 'a real key says there is a keyboard');
     });
+    const PHONE = { viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true };
+    await withGame('?seed=5&mute=1', { context: PHONE }, async (page) => {
+      await lib.frames(page, 3);
+      assert.ok(await shown(page, '.touch-rotate'), 'held upright, it asks to be turned');
+      assert.match(await text(page, '.touch-rotate'), /TURN THE PHONE SIDEWAYS/);
+      const box = await page.evaluate(() => {
+        const n = document.querySelector('.touch-rotate-text');
+        const r = n.getBoundingClientRect();
+        return { l: r.left, r: r.right, fs: parseFloat(getComputedStyle(n).fontSize) };
+      });
+      assert.ok(box.l >= 0 && box.r <= 390 && box.fs >= 16, JSON.stringify(box));
+      await shot(page, 'touch_rotate');
+      // A tap on the card asks for the whole screen and a sideways lock, where the browser allows them.
+      await page.tap('.touch-rotate');
+      await page.waitForFunction(() => !!document.fullscreenElement, null, { timeout: 30000 });
+      await page.evaluate(() => document.exitFullscreen());
+      await page.waitForFunction(() => !document.fullscreenElement, null, { timeout: 30000 });
+      await lib.frames(page, 2);
+      await page.evaluate(() => TLV.ui.setLang('he'));
+      await lib.frames(page, 3);
+      assert.match(await text(page, '.touch-rotate'), /לסובב/);
+      await page.setViewportSize({ width: 844, height: 390 });
+      await lib.frames(page, 4);
+      assert.ok(!(await shown(page, '.touch-rotate')), 'sideways, the card goes');
+    });
     await withGame('?seed=5&mute=1', {}, async (page) => {
       await lib.frames(page, 3);
       assert.ok(!(await shown(page, '.title-touch')), 'a desktop never sees it');
+      assert.strictEqual(await page.evaluate(() => document.getElementById('ui-root').classList.contains('touch')), false);
+      assert.match(await text(page, '.title-start'), /PRESS ANY KEY/);
+      assert.ok(await shown(page, '.controls-line'));
+    });
+    await withGame('?seed=5&mute=1&touch=off', { context: LAND }, async (page) => {
+      await lib.frames(page, 3);
+      assert.strictEqual(await page.evaluate(() => TLV.ui.touchMode()), false, '?touch=off holds on a phone');
+      await page.touchscreen.tap(420, 60);
+      await lib.frames(page, 3);
+      assert.strictEqual(await page.evaluate(() => TLV.ui.touchMode()), false, 'even after a touch');
     });
   });
 

@@ -93,8 +93,8 @@
       bakery: { he: 'המאפייה', en: 'the bakery' },
       hairdresser: { he: 'המספרה', en: 'the hairdresser' },
       greengrocer: { he: 'הירקן', en: 'the greengrocer' },
-      butcher: { he: 'הקצב', en: 'the butcher' },
-      ice_cream: { he: 'הגלידה', en: 'the ice cream place' },
+      butcher: { he: 'האטליז', en: 'the butcher' },
+      ice_cream: { he: 'הגלידרייה', en: 'the ice cream place' },
       post_office: { he: 'הדואר', en: 'the post office' },
       fuel: { he: 'תחנת הדלק', en: 'the petrol station' }
     },
@@ -465,6 +465,31 @@
     doubleMinS: 20,
     doubleMaxS: 40,
     reverseM: 30,
+    /** A small one-way street keeps this much of its lane clear at the far end. */
+    smallEndM: 8,
+    /** The wrong-way driver: metres a second it is planned at, how far past the meeting place it would go, and its stand nose to nose. */
+    wrongWayV: 6,
+    wrongWayPastM: 25,
+    /** He comes in from near the far end, so backing out again is short. */
+    wrongWayTailM: 25,
+    wrongWayHoldS: 3,
+    /** The stroller: lane wanted ahead of them, how far they walk, how long before they hear the car, and where they step off the kerb. */
+    strollRoomM: 12,
+    strollRunM: 30,
+    strollDwellS: 3,
+    strollClearM: 25,
+    strollKerbM: 0.3,
+
+    // A shared day (GAME_DESIGN 26).
+    /** Errands on a board besides the gan: one for each digit key. */
+    versusTasks: 9,
+    /** Metres of road from the spawn to each door of a board, dealt in this order, and to the gan. */
+    versusLegs: [350, 500, 650, 800, 950, 425, 575, 725, 875],
+    versusGanLegM: 900,
+    /** A driver reports to the others this often, and a board that is up on the move is priced again this often. */
+    versusSendS: 0.15,
+    versusRefreshS: 1.5,
+    versusInboxMax: 512,
 
     // First minute (GAME_DESIGN 19).
     beatWindowM: 60,

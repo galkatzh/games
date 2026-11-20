@@ -107,14 +107,15 @@
    * @param {object} S Sim state.
    * @param {number} index Errand to start from.
    * @param {boolean} [first] True for a run's first errand, which sends run.start ahead of errand.start (ARCHITECTURE 12.7).
+   * @param {object} [bound] An errand already bound, from a shared board. The plan is not read, and index is its place in the day.
    * @returns {boolean} False at the end of the plan.
    */
-  function setupErrand(S, index, first) {
+  function setupErrand(S, index, first, bound) {
     var g = S.game;
     var gg = g._g;
     var T = TLV.tune.game;
     var at = index;
-    var e = null;
+    var e = bound || null;
     while (at < gg.plan.length && !e) {
       e = TLV.game.errands.bind(S, at);
       if (!e) at++;
@@ -123,7 +124,7 @@
     g.errand = e;
     g.errandIndex = at;
     if (S.params.heat !== null && S.params.heat !== undefined) g.heat = S.params.heat;
-    else if (!gg.heatForced) g.heat = at / (T.legs.length - 1);
+    else if (!gg.heatForced) g.heat = Math.min(1, at / (T.legs.length - 1));
     TLV.game.parking.stageBlock(S);
     var bay = e.bayId >= 0 ? TLV.world.parking.spot(S.world, e.bayId) : null;
     var from = gg.from;
@@ -199,6 +200,13 @@
     var forced = o.defId !== undefined ? o.defId : S.params.errandDef;
     if (forced && g._g.plan.length) g._g.plan[index] = forced;
     flow._setPhase(S, 'CARD');
+    // A shared day has a board, not a plan: the car waits at the spawn, on the card, until its driver has picked from it.
+    if (o.versus && S.world) {
+      g._g.plan = [];
+      S.bus.emit('run.start', { seed: S.seed });
+      TLV.game.versus._begin(S, o.versus);
+      return;
+    }
     // 9 and 10: setupErrand binds, stages and routes, then sends run.start and errand.start.
     if (S.world && setupErrand(S, index, true)) return;
     S.bus.emit('run.start', { seed: S.seed });
@@ -353,12 +361,18 @@
     trackKeys(S);
     var veh = S.player.veh;
     g._g.playerV += (Math.abs(veh.v) - g._g.playerV) * Math.min(1, dt / T.playerSmoothS);
+    // What the other drivers sent since the last tick lands here, at a tick's edge. It can start a run, so the phase is read after it.
+    TLV.game.versus._tick(S, dt);
+    g = S.game;
     switch (g.phase) {
       case 'TITLE':
         if (S.params.notitle || S.controls.start) flow.startRun(S);
         return;
       case 'RUN_END':
-        if (freshPress(S, KEY_RESTART)) flow.startRun(S);
+        if (!freshPress(S, KEY_RESTART)) return;
+        // Among other drivers a day starts when they are all ready for one, and they all start it together.
+        if (TLV.game.versus.active(S)) TLV.game.versus._again(S);
+        else flow.startRun(S);
         return;
       case 'CARD':
         if (pullOut(S, dt) && g.phaseT >= (g.errandIndex === 0 ? T.cardFirstS : T.cardS) && g.errand) {
@@ -409,8 +423,8 @@
     return best;
   }
 
-  /** Clears one errand's traces and sets up the next, with the car pulling out to the lane. */
-  function nextErrand(S) {
+  /** Clears one errand's traces, with the car set to pull out to the lane from where it parked. */
+  function clearErrand(S) {
     var g = S.game;
     var gg = g._g;
     var W = S.world;
@@ -458,16 +472,74 @@
       gg.from = { x: veh.x, y: veh.y, h: veh.h };
     }
     flow._setPhase(S, 'CARD');
+  }
+
+  /** Clears one errand's traces and sets up the next. */
+  function nextErrand(S) {
+    clearErrand(S);
     // A false here is never a win: only the last errand of the plan, done, wins the day. See errandDone.
-    if (!setupErrand(S, g.errandIndex + 1)) noDay(S);
+    if (!setupErrand(S, S.game.errandIndex + 1)) noDay(S);
   }
 
   /** PAYOUT or RESOLVE is done. */
   function errandDone(S) {
     var g = S.game;
+    if (TLV.game.versus.active(S)) {
+      // The board says what comes next: the driver picks again, or the day is over for everyone.
+      clearErrand(S);
+      g.errand = null;
+      TLV.game.versus._errandDone(S);
+      return;
+    }
     if (g.errandIndex >= g._g.plan.length - 1) flow.endRun(S, 'WIN');
     else nextErrand(S);
   }
+
+  /**
+   * Starts an errand a driver picked from a shared board. Private to this package.
+   * @param {object} S Sim state.
+   * @param {object} e Errand, bound by errands._fromRow from the pose in S.game._g.from.
+   * @param {number} index Its place in this driver's day, which sets its heat and its award.
+   */
+  flow._startBoardErrand = function (S, e, index) {
+    var g = S.game;
+    // Parked or at the spawn, the phone card shows and the car pulls out as on any day. On the move there is nothing to wait for.
+    if (g.phase === 'CARD') flow._setPhase(S, 'CARD');
+    setupErrand(S, index, false, e);
+  };
+
+  /**
+   * Lets go of an errand its driver is still on the way to: another driver did it first, or this one chose again. The car stays where it
+   * is and keeps going, with nowhere to go until the next pick. Private to this package.
+   * @param {object} S Sim state.
+   */
+  flow._dropErrand = function (S) {
+    var g = S.game;
+    var gg = g._g;
+    var e = g.errand;
+    if (!e) return;
+    if (g.contest) TLV.game.rival._release(S, g.contest, true);
+    g.contest = null;
+    e.decoys.forEach(function (d) {
+      var p = d.pedId >= 0 ? TLV.peds.byId(S, d.pedId) : null;
+      if (p) TLV.peds.command(S, p, { type: 'CANCEL' });
+    });
+    gg.contestDue = false;
+    gg.searched = false;
+    g.park.kind = null;
+    g.park.stage = null;
+    g.park.bar = 0;
+    gg.park = TLV.game.parking._newState();
+    TLV.game.parking._clearPose(S);
+    g.obstacles.length = 0;
+    g.errand = null;
+    g.nav.route = null;
+    g.nav.remaining = Infinity;
+    gg.nav.laneId = -1;
+    if (g.phase === 'CARD') return;
+    if (S.player.mode !== 'FOOT') TLV.player.setLocked(S, false);
+    flow._setPhase(S, 'DRIVE');
+  };
 
   /**
    * Tick row 14: the timers of PAYOUT, BLOCKED and RESOLVE, then the checks that end a run.

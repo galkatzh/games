@@ -16,7 +16,8 @@
   var COLORS = {
     ground: '#e8d9b8', sea: '#1aa6c4', beach: '#f4dd9e', park: '#9fd47f', water: '#1aa6c4', plaza: '#efe3c8',
     road: '#ffffff', casing: '#b7a98a', route: '#ffd21f', foot: '#12b5cf', routeCase: '#15121c',
-    me: '#ff4630', meRim: '#ffffff', bay: '#3ddc6e', door: '#ff8a1f', rival: '#ff2e63', attacker: '#ff2e63', rim: '#15121c'
+    me: '#ff4630', meRim: '#ffffff', bay: '#3ddc6e', door: '#ff8a1f', rival: '#ff2e63', attacker: '#ff2e63', rim: '#15121c',
+    peer: '#b06cff', task: '#ffffff'
   };
 
   /** Land classes drawn on the base, in paint order. */
@@ -301,6 +302,12 @@
         var ped = S.peds[i];
         if (ped.active && ped.id === g.knife.attackerId) marker(cx, cy, half, ped.x - at.fx, ped.y - at.fy, yaw, scale, COLORS.attacker, '');
       }
+    }
+    // A shared day: the other drivers, and the doors on the board while it is up.
+    var shared = TLV.ui.versus.marks(S);
+    for (var m = 0; m < shared.length; m++) {
+      var mark = shared[m];
+      marker(cx, cy, half, mark.x - at.fx, mark.y - at.fy, yaw, scale, mark.kind === 'peer' ? COLORS.peer : COLORS.task, mark.label);
     }
     playerMark(cx, cy, TLV.math.wrapPi(yaw - at.h));
     northMark(cx, cy, half, yaw);

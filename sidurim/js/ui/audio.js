@@ -202,7 +202,8 @@
     var Ctor = window.AudioContext || window.webkitAudioContext;
     if (!Ctor) return;
     if (ctx) {
-      if (ctx.state === 'suspended' && !paused) ctx.resume();
+      // iOS leaves a context 'interrupted' after a call or the screen locking, and only a gesture brings it back.
+      if ((ctx.state === 'suspended' || ctx.state === 'interrupted') && !paused) ctx.resume();
       radioGesture();
       return;
     }

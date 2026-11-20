@@ -139,7 +139,9 @@
     u().show(dom.phone, on);
     if (!on) return;
     var lang = TLV.ui.strings.lang();
-    u().setText(dom.phoneIndex, t('hud.errand', { n: e.index + 1, total: 7 }));
+    // On a shared day the count is of the board, not of a day's seven.
+    var shared = u().versus.errandCount(S);
+    u().setText(dom.phoneIndex, t('hud.errand', shared || { n: e.index + 1, total: 7 }));
     u().setText(dom.phoneText, e.text[lang] || e.text.en);
     var nameOf = e.name ? (e.name[lang] || e.name.en || e.name.he) : '';
     u().setText(dom.phoneAt, nameOf ? t('card.at', { name: nameOf }) : '');

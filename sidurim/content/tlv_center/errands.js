@@ -26,7 +26,7 @@
       id: 'bank_queue', tier: 1, weight: 3,
       target: { kinds: ['bank'], named: 'prefer', anchor: null },
       fallbackKinds: [],
-      text: { he: 'הבנק צריך אותך באופן אישי. הוא לא אומר למה.', en: 'The bank needs you in person. It will not say why.' },
+      text: { he: 'הבנק רוצה לראות אותך בסניף. הוא לא מוכן להגיד למה.', en: 'The bank needs you in person. It will not say why.' },
       mod: null
     },
     {
@@ -43,7 +43,7 @@
       id: 'birthday_cake', tier: 2, weight: 3,
       target: { kinds: ['bakery'], named: 'prefer', anchor: null },
       fallbackKinds: [],
-      text: { he: 'עוגה מ{poi}. הנרות זו הבעיה שלך.', en: 'Cake from {poi}. The candles are your problem.' },
+      text: { he: 'עוגה מ{poi}. הנרות הם כבר בעיה שלך.', en: 'Cake from {poi}. The candles are your problem.' },
       mod: null
     },
     {
@@ -51,7 +51,7 @@
       target: { kinds: ['hairdresser'], named: 'prefer', anchor: null },
       fallbackKinds: [],
       text: {
-        he: 'לבטל את התספורת ב{poi} באופן אישי. תרגלת את הנאום.',
+        he: 'לבטל את התור לתספורת ב{poi}, פנים אל פנים. את הנאום כבר תרגלת.',
         en: 'Cancel your haircut at {poi} in person. You have practised the speech.'
       },
       mod: null
@@ -68,7 +68,7 @@
       target: { kinds: ['butcher', 'supermarket'], named: 'prefer', anchor: null },
       fallbackKinds: [],
       text: {
-        he: 'ההזמנה של חמותך ב{poi}. היא כתבה את הרשימה פעמיים.',
+        he: 'ההזמנה של חמותך מחכה ב{poi}. היא כתבה את הרשימה פעמיים.',
         en: 'Your mother-in-law\'s order at {poi}. She wrote the list twice.'
       },
       mod: null

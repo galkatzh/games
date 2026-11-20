@@ -353,6 +353,32 @@
     reverseAccel: 2.5,
     reverseClear: 1.2,
     reverseMaxS: 20,
+    // Against a one-way lane (WRONG_WAY, ARCHITECTURE 13.1).
+    wrongWaySpeed: 6.5,
+    wrongWayMinV: 2,
+    wrongWayAccel: 2.2,
+    wrongWayBrake: 5,
+    /** Stops this far short of whatever it meets, and reads a body coming at it this many seconds early. */
+    wrongWayClear: 3,
+    wrongWayLagS: 0.9,
+    wrongWaySideM: 0.3,
+    /** The sharpest turn it will back round to get out. */
+    wrongWayTurnDeg: 120,
+    wrongWayMaxM: 70,
+    /** Stands nose to nose this long, as if the other driver were the one in the wrong. */
+    wrongWayHoldS: 3,
+    /** Out again tail first, and in a hurry. */
+    wrongWayBackV: 6,
+    /** Blocked this long, it has met someone. */
+    wrongWayMetS: 0.4,
+    /** Its centre stays this far inside each end of the lane. */
+    wrongWayEndM: 5,
+    /** Backs out across the junction into a street that leads to it, this far up it, in this long. */
+    wrongWayBackInM: 9,
+    wrongWayTurnS: 4,
+    /** Everything it does ends inside this, and with nowhere to back into it stands this long before it goes. */
+    wrongWayMaxS: 40,
+    wrongWayStuckS: 8,
     towSpeed: 3,
     towS: 5,
     /** The longest a tow waits for the player's car to clear its way. A car that never moves must not hold a wreck in the lane for ever. */

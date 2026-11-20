@@ -17,8 +17,6 @@
   var keyHandler = null;
   var startedOnce = false;
   var creditsOpen = false;
-  /** A real key has gone down on this page, so there is a keyboard, whatever the pointer says. */
-  var keySeen = false;
 
   var DIFFICULTIES = ['relaxed', 'normal'];
 
@@ -103,6 +101,8 @@
   /** A click starts the day the same way a key does, through input.js, so input stays the only path into the sim. */
   function pressEnter() {
     TLV.audio.unlock();
+    // A tap to start on a phone is the gesture a browser asks for before it gives up the whole screen.
+    if (u().touchMode() && u().touch && u().touch.fullscreen) u().touch.fullscreen();
     syntheticHeld = 1;
     syntheticPhase = sim && sim.game ? sim.game.phase : null;
     window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Enter', key: 'Enter', bubbles: true }));
@@ -139,18 +139,7 @@
     TLV.audio.ui('click');
   }
 
-  /**
-   * @returns {boolean} True on a device with nothing to drive with: a touch screen, no mouse or trackpad, no key pressed so far and no
-   * gamepad. A phone with a keyboard or pad paired loses the line as soon as either speaks.
-   */
-  function touchOnly() {
-    if (keySeen || !window.matchMedia || window.matchMedia('(any-pointer: fine)').matches) return false;
-    var touch = window.matchMedia('(any-pointer: coarse)').matches || window.navigator.maxTouchPoints > 0;
-    return touch && !u().padConnected();
-  }
-
   function keyDown(e) {
-    if (e.isTrusted) keySeen = true;
     if (!sim || !sim.game) return;
     var phase = sim.game.phase;
     if (creditsOpen) {
@@ -263,6 +252,9 @@
 
     dom.titleTouch = el('div', 'title-touch off', scr);
     dom.titleStart = button(scr, 'title-start', pressEnter);
+    dom.titleOnline = button(scr, 'title-online', function () {
+      window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyO', key: 'o', bubbles: true }));
+    });
     dom.titleControls = controlsLine(scr);
 
     var foot = el('div', 'title-foot', scr);
@@ -281,6 +273,10 @@
     dom.pauseLine = el('div', 'pause-line', panel);
     dom.pauseResume = button(panel, 'pause-resume', function () { u().togglePause(); });
     dom.pauseMute = button(panel, 'pause-mute', function () { u().toggleMute(); });
+    // N and B are the radio's keys. A phone has neither, so the pause screen has the button.
+    dom.pauseRadio = button(panel, 'pause-radio', function () {
+      if (TLV.audio.radioNext) TLV.audio.radioNext();
+    });
     dom.pauseCredits = button(panel, 'pause-credits', function () { setCredits(true); });
     dom.pauseControls = controlsLine(panel);
     dom.pauseOsm = el('div', 'osm', panel);
@@ -338,6 +334,7 @@
       { text: C.osmUrl, ltr: true }
     ]);
     creditsBlock(t('credits.engine'), [{ text: C.three, ltr: true }, { text: C.threeLine, ltr: true }]);
+    creditsBlock(t('credits.online'), [{ text: C.trystero, ltr: true }, { text: C.trysteroLine, ltr: true }, { text: t('credits.onlineLine') }]);
     creditsBlock(t('credits.art'), ids.length ? ids.map(function (id) {
       return { text: creditLine(id, index[id].credit) };
     }) : [{ text: t('credits.noArt') }]);
@@ -422,9 +419,12 @@
     u().setText(dom.pickHead, t('title.pick'));
     u().setRich(dom.pickKeys, t('title.pickKeys'));
     u().setText(dom.titleStart, t('title.start'));
+    u().setRich(dom.titleOnline, t('title.online'));
     u().setText(dom.titleTouch, t('title.touch'));
     u().setText(dom.titleOsm, TLV.ui.strings.OSM);
-    u().setRich(dom.langBtn, t('title.langKey') + ' ' + t('title.langName'));
+    var langKey = t('title.langKey');
+    u().setRich(dom.langBtn, (langKey ? langKey + ' ' : '') + t('title.langName'));
+    u().setText(dom.pauseRadio, t('touch.radio'));
     dom.diffOptions.forEach(function (opt) {
       u().setText(opt.title, t('diff.' + opt.name + '.name'));
       u().setText(opt.line, t('diff.' + opt.name + '.line'));
@@ -470,7 +470,8 @@
     }
     if (name !== 'run.end') return;
     var marked = markedRun(p.reason, S.game);
-    var isBest = !marked && p.money > bestMoney();
+    // A shared day is another game: half a board is no day to hold a full one against.
+    var isBest = !marked && p.money > bestMoney() && !u().versus.shared(S);
     if (isBest) u().save(TLV.tune.ui.keyBest, Math.round(p.money));
     ended = { reason: p.reason, money: p.money, rank: p.rank, stats: p.stats, isBest: isBest && p.money > 0, marked: marked };
     if (dom) dom.lastEnd = null;
@@ -504,12 +505,15 @@
   }
 
   function paintEnd(info) {
-    var key = JSON.stringify([info.reason, info.money, info.rank, info.marked, TLV.ui.strings.lang()]);
+    var shared = sim ? u().versus.endInfo(sim) : null;
+    var restart = shared ? shared.restart : null;
+    var key = JSON.stringify([info.reason, info.money, info.rank, info.marked, TLV.ui.strings.lang(), restart]);
     if (dom.lastEnd === key) return;
     dom.lastEnd = key;
     var straight = info.reason === 'REVOKED';
     dom.endCard.classList.toggle('straight', straight);
     dom.end.classList.toggle('win', info.reason === 'WIN');
+    dom.end.classList.toggle('shared', !!shared);
     u().setText(dom.endTitle, t('end.' + info.reason + '.title'));
     var line = t('end.' + info.reason + '.line');
     u().setText(dom.endLine, line);
@@ -522,11 +526,11 @@
     u().show(dom.endTotalRow, !straight);
     dom.endTotal.classList.toggle('plain', !!info.marked);
     var best = info.marked ? bestMoney() : Math.max(bestMoney(), info.money);
-    u().show(dom.endBest, !straight && (!info.marked || best > 0));
+    u().show(dom.endBest, !straight && !shared && (!info.marked || best > 0));
     u().setText(dom.endBest, info.isBest ? t('end.newBest') : t('end.best', { money: TLV.ui.strings.money(best) }));
     u().setText(dom.endStamp, t('end.' + info.reason + '.stamp'));
     dom.endStamp.classList.toggle('good', info.reason === 'WIN');
-    u().setRich(dom.endRestart, t(straight ? 'end.restartRevoked' : 'end.restart'));
+    u().setRich(dom.endRestart, t(restart || (straight ? 'end.restartRevoked' : 'end.restart')));
     u().show(dom.endClass, !straight);
     u().setText(dom.endNextLabel, t(straight ? 'end.difficultyPlain' : 'end.difficulty'));
     dom.endTally.textContent = '';
@@ -558,9 +562,11 @@
       u().setRich(dom.pauseMute, t(TLV.audio.isMuted() ? 'pause.soundOff' : 'pause.soundOn'));
       u().setRich(dom.pauseResume, t(u().padConnected() ? 'pause.resumePad' : 'pause.resume'));
     }
-    var touch = dom.title._shown === true && touchOnly();
+    // On a touch screen the title says where the stick and the buttons are, and to hold the phone sideways.
+    var touch = dom.title._shown === true && u().touchMode();
     u().show(dom.titleTouch, touch);
     dom.title.classList.toggle('touch-only', touch);
+    u().show(dom.pauseRadio, paused && u().touchMode());
     var lost = u().contextLost();
     u().show(dom.lost, !!lost);
     if (lost) {
@@ -570,6 +576,11 @@
     var info = endInfo(S);
     u().show(dom.end, !!info);
     if (info) paintEnd(info);
+  };
+
+  /** @returns {boolean} True while the credits hold the keys. */
+  menus.busy = function () {
+    return creditsOpen;
   };
 
   /** @returns {boolean} True once a run has started on this page. */

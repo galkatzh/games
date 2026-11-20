@@ -156,4 +156,28 @@ async function frames(page, n) {
   }), n);
 }
 
-module.exports = { open, frames, serve, press };
+/**
+ * Real multi-touch, through the DevTools protocol: Playwright's touchscreen can only tap. A start or a move sends every finger still
+ * down, as a phone does, so two can be held at once. An end names only the finger lifted: Chromium ends the points a touchEnd lists.
+ * @param {object} page Playwright page, in a context with hasTouch.
+ * @returns {Promise<{down:function, move:function, up:function, cancel:function}>} Each takes a finger id and client pixels.
+ */
+async function touchPad(page) {
+  const cdp = await page.context().newCDPSession(page);
+  const live = new Map();
+  const points = () => [...live.values()];
+  const send = (type, touchPoints) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints });
+  return {
+    down: async (id, x, y) => { live.set(id, { x, y, id }); await send('touchStart', points()); },
+    move: async (id, x, y) => { live.set(id, { x, y, id }); await send('touchMove', points()); },
+    up: async (id) => {
+      const finger = live.get(id);
+      if (!finger) return;
+      live.delete(id);
+      await send('touchEnd', [finger]);
+    },
+    cancel: async () => { live.clear(); await send('touchCancel', []); }
+  };
+}
+
+module.exports = { open, frames, serve, press, touchPad };

@@ -214,6 +214,9 @@
     strollWarnM: 15,
     asideSpeed: 0.5,
     strollSpeed: 0.8,
+    /** A staged stroller walks this far from the middle of the lane, and for at most this long. */
+    strollMidM: 0.35,
+    strollMaxS: 40,
 
     // Getting out of a car on the traffic side.
     /** A car slower than this may be the one someone just got out of. */

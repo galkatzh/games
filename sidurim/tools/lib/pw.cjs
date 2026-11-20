@@ -152,4 +152,5 @@ async function screenshot(page, file) {
   }
 }
 
-module.exports = { open, waitForTick, screenshot, serve, LAUNCH_ARGS, PROJECT_ROOT };
+// chromium itself is exported for the scripts that need two pages in one context, which open() does not make.
+module.exports = { open, waitForTick, screenshot, serve, chromium, LAUNCH_ARGS, PROJECT_ROOT };

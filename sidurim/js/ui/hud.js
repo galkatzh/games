@@ -435,7 +435,9 @@
     // The parking view shows the bay in the top of the frame, right where this card sits. The minimap keeps the door marked.
     dom.chip.classList.toggle('parking-view', parking);
     var lang = TLV.ui.strings.lang();
-    u().setText(dom.chipIndex, t('hud.errand', { n: e.index + 1, total: 7 }));
+    // On a shared day the count is of the board, not of a day's seven.
+    var shared = u().versus.errandCount(S);
+    u().setText(dom.chipIndex, t('hud.errand', shared || { n: e.index + 1, total: 7 }));
     u().setText(dom.chipText, e.text[lang] || e.text.en);
   }
 
@@ -611,6 +613,7 @@
     var T = TLV.tune.ui;
     var v = Math.abs(S.vehicles[0].v);
     var stuck = stuckNow(S, dt);
+    view.stuckNow = stuck;
     if (g.phase === 'HOLD') {
       var park = g.park;
       if (park.kind === 'CURB') return { text: t('park.CURB') };
@@ -1506,6 +1509,11 @@
   };
 
   /** @returns {boolean} True while the HUD is on screen. */
+  /** @returns {boolean} True while the tow is on offer: the car is getting nowhere. Whatever the prompt shows, the R button can. */
+  hud.towOffered = function () {
+    return !!(view && view.stuckNow);
+  };
+
   hud.isLive = function () {
     return !!dom && !dom.box.classList.contains('off');
   };

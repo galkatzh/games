@@ -66,9 +66,11 @@
     maskMPerPx: 2.5,
     maskBatch: 240,
 
-    // Quality presets. With no quality asked for, a software GPU starts on low and any other on high, and the ladder takes over.
+    // Quality presets. With no quality asked for, a software GPU starts on low, a phone or tablet on mobile and any other on high, and the
+    // ladder takes over. mobile keeps the sun's shadows at a smaller map, and draws fewer pixels than a phone's three per CSS pixel.
     quality: {
       low: { pixelRatio: 0.75, shadow: 0, l1M: 500, antialias: false },
+      mobile: { pixelRatio: 0.75, shadow: 512, l1M: 550, antialias: false },
       med: { pixelRatio: 1, shadow: 1024, l1M: 600, antialias: true },
       high: { pixelRatio: 1, shadow: 1024, l1M: 700, antialias: true }
     },
@@ -309,7 +311,7 @@
       hairdresser: ['מספרה', 'Hairdresser'],
       greengrocer: ['ירקן', 'Greengrocer'],
       butcher: ['אטליז', 'Butcher'],
-      ice_cream: ['גלידה', 'Ice cream'],
+      ice_cream: ['גלידרייה', 'Ice cream'],
       post_office: ['דואר', 'Post office'],
       fuel: ['תחנת דלק', 'Fuel'],
       restaurant: ['מסעדה', 'Restaurant'],
@@ -329,7 +331,7 @@
       cinema: ['קולנוע', 'Cinema'],
       gallery: ['גלריה', 'Gallery'],
       library: ['ספרייה', 'Library'],
-      mall: ['מרכז קניות', 'Mall'],
+      mall: ['קניון', 'Mall'],
       marketplace: ['שוק', 'Market'],
       office: ['משרדים', 'Offices']
     },
