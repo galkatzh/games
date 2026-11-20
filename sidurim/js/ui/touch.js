@@ -25,8 +25,9 @@
     slopMinPx: 12,
     /** After the last touch, keys and the mouse wait this long before they take the screen back. */
     keysAfterMs: 600,
-    /** A pad stick past this is a player on the pad. */
+    /** A pad stick past this is a player on the pad, and these first buttons (A to Start) are the ones input.sample reads. */
     padAxis: 0.3,
+    padButtons: 10,
     /** Narrower than this and taller than wide is a phone held upright. A tablet plays upright. */
     portraitMaxW: 700,
     /** R stays up this long after the tow stops being offered, so it does not vanish under a thumb on its way. */
@@ -77,6 +78,8 @@
   var pinchRun = null;
   var layoutDirty = true;
   var winListeners = [];
+  /** A mode asked for by a press still under way. It applies once the press has ended, so the screen never moves under it. */
+  var pendingMode = null;
 
   function u() {
     return TLV.ui;
@@ -116,6 +119,11 @@
     var coarse = !!mm && mm('(pointer: coarse)').matches;
     var nav = window.navigator || {};
     return coarse && ((nav.maxTouchPoints || 0) > 0 || 'ontouchstart' in window);
+  }
+
+  /** @returns {boolean} True for a touch inside a pane that scrolls by itself, which no guard may hold still. */
+  function inScroller(target) {
+    return !!(target && target.closest && target.closest('.board, .credits-body, .ui-error, .lobby-panel'));
   }
 
   /** Adds a listener this file can take away again, so a second build (importReplay) leaves no stale handler behind. */
@@ -180,19 +188,45 @@
     return now() - lastTouchMs > G.keysAfterMs;
   }
 
+  /**
+   * A press that changes the mode changes the layout, and the screen must not move under the very press that changed it: the click
+   * it ends in would land on whatever slid there. So the mode is noted on the way down and applied once the press is over.
+   */
   function onAnyPointer(ev) {
     if (ev.pointerType === 'touch' || ev.pointerType === 'pen') {
       lastTouchMs = now();
-      flip('touch');
-    } else if (ev.pointerType === 'mouse' && keysMayTake()) {
-      flip('keys');
+      if (mode !== 'touch') pendingMode = 'touch';
+    } else if (ev.pointerType === 'mouse' && keysMayTake() && mode !== 'keys') {
+      pendingMode = 'keys';
     }
+  }
+
+  /** The press is over: its click has been dispatched by the time this timer runs. */
+  function onAnyPointerEnd() {
+    if (!pendingMode) return;
+    window.setTimeout(applyPending, 0);
+  }
+
+  function applyPending() {
+    if (!pendingMode) return;
+    var next = pendingMode;
+    pendingMode = null;
+    flip(next);
   }
 
   /** Where a browser has no pointer events, a touch still says what the device is. */
   function onAnyTouch() {
     lastTouchMs = now();
-    if (!window.PointerEvent) flip('touch');
+    if (!window.PointerEvent && mode !== 'touch') pendingMode = 'touch';
+  }
+
+  function onAnyTouchEnd() {
+    if (!window.PointerEvent) onAnyPointerEnd();
+  }
+
+  /** @returns {boolean} False for a bot or a replay: nobody is holding this phone, and nothing waits for them (main.js app.human). */
+  function human() {
+    return !(TLV.app && TLV.app.human === false);
   }
 
   function onAnyKey(ev) {
@@ -200,21 +234,22 @@
     flip('keys');
   }
 
-  /** A pad being played, not merely paired, takes the screen. */
+  /**
+   * A pad being played, not merely paired, takes the screen. Only what input.sample reads counts: the first connected pad, its left
+   * stick and its standard buttons. A pad whose other axes rest off centre (a hat, or triggers at -1) is not someone playing.
+   */
   function padActive() {
     var nav = window.navigator;
     var pads = nav && nav.getGamepads ? nav.getGamepads() : [];
-    for (var i = 0; i < pads.length; i++) {
-      var pad = pads[i];
-      if (!pad || !pad.connected) continue;
-      for (var b = 0; b < pad.buttons.length; b++) {
-        if (pad.buttons[b] && pad.buttons[b].pressed) return true;
-      }
-      for (var a = 0; a < pad.axes.length; a++) {
-        if (Math.abs(pad.axes[a] || 0) > G.padAxis) return true;
-      }
+    var pad = null;
+    for (var i = 0; i < pads.length && !pad; i++) {
+      if (pads[i] && pads[i].connected) pad = pads[i];
     }
-    return false;
+    if (!pad) return false;
+    for (var b = 0; b < G.padButtons && b < pad.buttons.length; b++) {
+      if (pad.buttons[b] && pad.buttons[b].pressed) return true;
+    }
+    return Math.abs(pad.axes[0] || 0) > G.padAxis || Math.abs(pad.axes[1] || 0) > G.padAxis;
   }
 
   // ---- Building. ------------------------------------------------------------------------------------------------------------
@@ -263,6 +298,10 @@
     rotateOn = false;
     rotatePaused = false;
     pinchRun = null;
+    pendingMode = null;
+    // A new sim starts its clock again, so a time kept from the last one would mean nothing.
+    towSeen = -1e9;
+    towHeldT = 0;
     dom = {};
     var layer = dom.layer = el('div', 'touch-layer off', root);
     layer.dir = 'ltr';
@@ -278,10 +317,11 @@
       recover: holdButton('recover', 'recover'),
       out: holdButton('out', 'out')
     };
-    dom.row = el('div', 'tu-row', layer);
-    dom.util = { pause: utilButton('pause'), camera: utilButton('camera'), mirror: utilButton('mirror') };
+    // The catcher is built before the row, so pause stays on top of it and is still pause on the comic card.
     var catcher = dom.catcher = el('div', 'touch-catch off', layer);
     catcher.dataset.ctl = 'catch';
+    dom.row = el('div', 'tu-row', layer);
+    dom.util = { pause: utilButton('pause'), camera: utilButton('camera'), mirror: utilButton('mirror') };
 
     // Measures the safe-area insets: see insets().
     dom.probe = el('div', 'touch-probe', layer);
@@ -301,12 +341,16 @@
     listen(layer, 'touchstart', function (ev) { if (ev.cancelable) ev.preventDefault(); }, { passive: false });
     listen(layer, 'contextmenu', function (ev) { ev.preventDefault(); });
     listen(rotate, 'pointerup', function () { touch.fullscreen(); });
+    // A long press on the street is a thumb resting, not a request for a menu. With a mouse, a right click stays the browser's.
     var canvas = document.getElementById('game');
-    listen(canvas, 'contextmenu', function (ev) { ev.preventDefault(); });
+    listen(canvas, 'contextmenu', function (ev) { if (mode === 'touch') ev.preventDefault(); });
 
     // Which is being used: fingers, keys, or a mouse. Capture phase, so nothing that stops a key upstream hides it from here.
     listen(window, 'pointerdown', onAnyPointer, { capture: true, passive: true });
+    listen(window, 'pointerup', onAnyPointerEnd, { capture: true, passive: true });
+    listen(window, 'pointercancel', onAnyPointerEnd, { capture: true, passive: true });
     listen(window, 'touchstart', onAnyTouch, { capture: true, passive: true });
+    listen(window, 'touchend', onAnyTouchEnd, { capture: true, passive: true });
     listen(window, 'keydown', onAnyKey, true);
 
     // A finger lifted where this page cannot see it never reports, so anything that can take the page away lets go of everything.
@@ -317,10 +361,15 @@
     listen(document, 'visibilitychange', function () { if (document.hidden) releaseAll(); });
     listen(document, 'fullscreenchange', onFullscreen);
     if (window.visualViewport) listen(window.visualViewport, 'resize', relayout);
-    // iOS pinch, and the page dragged about under a thumb that slid off a control.
-    listen(document, 'gesturestart', function (ev) { ev.preventDefault(); }, { passive: false });
-    listen(document, 'gesturechange', function (ev) { ev.preventDefault(); }, { passive: false });
-    listen(document, 'touchmove', function (ev) { if (layerOn && ev.cancelable) ev.preventDefault(); }, { passive: false });
+    // iOS pinch, and the page dragged about under a thumb that slid off a control. Only in touch mode: a Mac's trackpad pinch stays
+    // the browser's. A list that scrolls (the board, the credits, an error) keeps its own scrolling.
+    var pinch = function (ev) { if (mode === 'touch') ev.preventDefault(); };
+    listen(document, 'gesturestart', pinch, { passive: false });
+    listen(document, 'gesturechange', pinch, { passive: false });
+    listen(document, 'touchmove', function (ev) {
+      if (!layerOn || !ev.cancelable || inScroller(ev.target)) return;
+      ev.preventDefault();
+    }, { passive: false });
     layoutDirty = true;
     touch.relabel();
   };
@@ -440,7 +489,8 @@
     var target = ev.target && ev.target.closest ? ev.target.closest('[data-ctl]') : null;
     if (!target || !layerOn) return;
     var ctl = target.dataset.ctl;
-    if (ctl !== 'catch' && inEdgeBand(ev.clientX)) return;
+    // Only the stick's open zone gives way to the phone's edge swipe. A drawn button is aimed at, wherever it sits.
+    if (ctl === 'stick' && inEdgeBand(ev.clientX)) return;
     if (ctl === 'stick') {
       // One thumb drives. A second finger landing in the zone is ignored, so the steering never jumps.
       if (stick.owner !== null) return;
@@ -572,7 +622,7 @@
   function onFullscreen() {
     releaseAll();
     layoutDirty = true;
-    if (!document.fullscreenElement && sim && sim.game && live(sim.game.phase) && u().windowLeft) u().windowLeft();
+    if (!document.fullscreenElement && human() && sim && sim.game && live(sim.game.phase) && u().windowLeft) u().windowLeft();
   }
 
   // ---- Each frame. ----------------------------------------------------------------------------------------------------------
@@ -626,7 +676,7 @@
       if (!want) rotatePaused = false;
     }
     // Turning the phone upright in the middle of a run is a reason to stop it, once. Back sideways, the pause screen takes over.
-    if (want && !rotatePaused && S.game && live(S.game.phase)) {
+    if (want && !rotatePaused && human() && S.game && live(S.game.phase)) {
       rotatePaused = true;
       if (u().windowLeft) u().windowLeft();
     }

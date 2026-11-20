@@ -62,6 +62,13 @@ test('the stick back stops the car, then reverses after the pause a key gets too
   assert.ok(veh.v < -0.2, `and backs up, ${veh.v.toFixed(2)} m/s`);
 });
 
+test('a light pull at rest backs up, rather than standing still with the reverse lights on', () => {
+  const { TLV, S, touch, veh } = rig();
+  touch.stick(0, 0.22);
+  run(TLV, S, Math.ceil(60 * (T.player.reverseDelayS + 2)));
+  assert.ok(veh.v < -0.1, `backs up, ${veh.v.toFixed(2)} m/s`);
+});
+
 test('letting go coasts the car down, and at rest every output is exactly zero', () => {
   const { TLV, S, touch, veh } = rig();
   TLV.player.setPose(S, 0, 0, 0, 2);

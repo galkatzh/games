@@ -49,9 +49,10 @@ test('auto starts a software GPU on low, a phone or tablet on mobile, and anythi
   for (const gpu of software) assert.strictEqual(TLV.render.pickQuality('auto', gpu).name, 'low', gpu);
   const real = ['ANGLE (Intel, Intel(R) UHD Graphics 620 Direct3D11 vs_5_0 ps_5_0, D3D11)', 'Apple M1', 'Apple GPU', 'WebKit WebGL', ''];
   for (const gpu of real) assert.strictEqual(TLV.render.pickQuality('auto', gpu).name, 'high', gpu);
-  // A phone's GPU names itself. An iPhone calls itself 'Apple GPU', as a Mac's Safari does, so it is known by its finger instead.
+  // A phone is known by its finger, not its GPU's name: a Snapdragon laptop reports an Adreno, and an iPhone says 'Apple GPU' as a Mac does.
   for (const gpu of ['Adreno (TM) 640', 'Mali-G78', 'PowerVR Rogue GE8320', 'Samsung Xclipse 920', 'Immortalis-G715']) {
-    assert.strictEqual(TLV.render.pickQuality('auto', gpu).name, 'mobile', gpu);
+    assert.strictEqual(TLV.render.pickQuality('auto', gpu, true).name, 'mobile', gpu);
+    assert.strictEqual(TLV.render.pickQuality('auto', gpu, false).name, 'high', `${gpu} without a touch screen`);
   }
   assert.strictEqual(TLV.render.pickQuality('auto', 'Apple GPU', true).name, 'mobile');
   assert.strictEqual(TLV.render.pickQuality('auto', 'Apple GPU', false).name, 'high');

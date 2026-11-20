@@ -2048,6 +2048,7 @@ html.touch #game {
 }
 
 html.touch #ui-root {
+  height: 100vh;
   height: 100dvh;
   -webkit-user-select: none;
   -webkit-touch-callout: none;
@@ -2081,7 +2082,8 @@ html.touch .ui-error { -webkit-user-select: text; user-select: text; }
 #ui-root.touch .title-foot { left: calc(2em + var(--sa-l)); right: calc(2em + var(--sa-r)); bottom: calc(0.7em + var(--sa-b)); pointer-events: none; }
 #ui-root.touch .title-foot button { pointer-events: auto; }
 #ui-root.touch .title-start { bottom: calc(2.7em + var(--sa-b)); font-size: 2.1em; min-height: 44px; }
-#ui-root.touch .title-online { bottom: calc(104px + var(--sa-b)); min-height: 40px; }
+/* Above the start line on any screen: its top is 5.4em + max(44px, 2.4em) in this line's em, which grows on a tablet. */
+#ui-root.touch .title-online { bottom: calc(max(104px, 5.4em + max(44px, 2.4em) + 12px) + var(--sa-b)); min-height: 40px; }
 #ui-root.touch .title-pick-keys { display: none; }
 #ui-root.touch .title-touch {
   top: 54%;
@@ -2097,8 +2099,8 @@ html.touch .ui-error { -webkit-user-select: text; user-select: text; }
 #ui-root.touch .pause-radio { font-size: 1.2em; color: #fff; }
 
 /* The board of a shared day: a thumb-high row each, and a list that scrolls on a short screen. */
-#ui-root.touch .board { top: calc(0.4em + var(--sa-t)); max-height: calc(100dvh - 0.8em - var(--sa-t) - var(--sa-b)); overflow-y: auto; font-size: 1.1em; width: min(44em, 72vw); margin-left: 0; left: 50%; transform: translateX(-50%); box-sizing: border-box; }
-#ui-root.touch .board.driving { top: calc(0.4em + var(--sa-t)); right: auto; left: 50%; max-height: 64dvh; font-size: 1em; width: min(40em, 60vw); }
+#ui-root.touch .board { top: calc(0.4em + var(--sa-t)); max-height: calc(100vh - 0.8em - var(--sa-t) - var(--sa-b)); max-height: calc(100dvh - 0.8em - var(--sa-t) - var(--sa-b)); overflow-y: auto; font-size: 1.1em; width: min(44em, 72vw); margin-left: 0; left: 50%; transform: translateX(-50%); box-sizing: border-box; }
+#ui-root.touch .board.driving { top: calc(0.4em + var(--sa-t)); right: auto; left: 50%; max-height: 64vh; max-height: 64dvh; font-size: 1em; width: min(40em, 60vw); }
 #ui-root.touch .board-row { min-height: 34px; }
 #ui-root.touch .board-row kbd { display: none; }
 #ui-root.touch .board-keep { min-height: 40px; }
@@ -2174,6 +2176,7 @@ html.touch .ui-error { -webkit-user-select: text; user-select: text; }
   position: absolute;
   left: calc(var(--edge) + var(--sa-l));
   width: calc(45vw - var(--edge) - var(--sa-l));
+  top: 34vh;
   top: 34dvh;
   bottom: var(--sa-b);
   pointer-events: auto;

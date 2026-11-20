@@ -75,8 +75,6 @@
       high: { pixelRatio: 1, shadow: 1024, l1M: 700, antialias: true }
     },
     softwareGpu: /swiftshader|llvmpipe|softpipe|software|basic render/i,
-    /** Phone and tablet GPUs. Not 'Apple GPU', which a Mac's Safari reports too: an iPhone is told apart by its coarse pointer. */
-    mobileGpu: /adreno|mali|powervr|xclipse|immortalis/i,
 
     // The ladder: dynamic resolution. Frame times are read in windows, so one long frame moves nothing.
     dynResMs: 26,        // A window's mean above this goes down a rung

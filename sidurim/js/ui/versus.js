@@ -22,6 +22,8 @@
   var takenNote = false;
   var lastBoard = '';
   var lastEnd = '';
+  /** The room the copy button last spoke for. A new room puts its label back. */
+  var copyRoom = '';
 
   function u() {
     return TLV.ui;
@@ -114,11 +116,17 @@
     return loc.origin + loc.pathname + '?room=' + room;
   }
 
+  /** @returns {boolean} True where the clipboard can be written: a secure page (https or localhost) with the API present. */
+  function canCopy() {
+    var clip = window.navigator && window.navigator.clipboard;
+    return !!(window.isSecureContext && clip && typeof clip.writeText === 'function');
+  }
+
   /** Puts the room's link on the clipboard, for a message to the other driver. */
   function copyLink() {
     var link = roomLink();
-    var clip = window.navigator && window.navigator.clipboard;
-    if (!link || !clip || typeof clip.writeText !== 'function') return;
+    if (!link || !canCopy()) return;
+    var clip = window.navigator.clipboard;
     clip.writeText(link).then(function () {
       if (dom) u().setText(dom.lobbyCopy, t('lobby.copied'));
     }, function () {});
@@ -433,7 +441,12 @@
     u().show(dom.lobbyInput, asking);
     if (!asking && dom.lobbyInput.value) dom.lobbyInput.value = '';
     else if (asking && document.activeElement !== dom.lobbyInput && dom.lobbyInput.value !== typed) dom.lobbyInput.value = typed;
-    u().show(dom.lobbyCopy, state.status === 'open' && !!roomLink());
+    var copyable = state.status === 'open' && !!roomLink() && canCopy();
+    u().show(dom.lobbyCopy, copyable);
+    if ((state.room || '') !== copyRoom) {
+      copyRoom = state.room || '';
+      u().setText(dom.lobbyCopy, t('lobby.copyLink'));
+    }
     var others = 0;
     var odd = 0;
     var out = 0;

@@ -15,7 +15,8 @@
   /**
    * The on-screen stick and buttons (js/ui/touch.js). The stick reports a finger's offset over its radius, each axis -1..1, y down.
    * Forward past deadY is throttle from `creep`, which is just over what moves the car (vehicle.js driveForce), rising as the square,
-   * so the first half of the travel is for creeping into a bay. Back is a straight brake, which at rest becomes reverse by itself.
+   * so the first half of the travel is for creeping into a bay. Back is a brake from backCreep, which at rest becomes reverse by itself:
+   * under 1/6 the coasting drag beats the reverse push (vehicle.js driveForce), so a lighter pull would stand still with its lights on.
    * Sideways is steer with a soft centre. Every value the stick makes is a multiple of 1/outStep, exact in binary, so a still thumb
    * gives the same ControlState tick after tick and a replay log stays short.
    */
@@ -23,6 +24,7 @@
     deadX: 0.12,
     deadY: 0.18,
     creep: 0.10,
+    backCreep: 0.2,
     steerExpo: 0.35,
     footDead: 0.15,
     footFull: 0.7,
@@ -357,7 +359,7 @@
         touched = true;
       }
       if (stop > 0) {
-        brake = Math.max(brake, touchOut(stop));
+        brake = Math.max(brake, touchOut(TOUCH.backCreep + (1 - TOUCH.backCreep) * stop));
         touched = true;
       }
       var mag = Math.min(1, Math.sqrt(tStick.x * tStick.x + tStick.y * tStick.y));

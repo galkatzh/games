@@ -109,9 +109,9 @@
    */
   render.pickQuality = function (asked, gpu, coarse) {
     if (asked === 'low' || asked === 'med' || asked === 'high') return { name: asked, auto: false };
-    var T = TLV.tune.render;
-    if (T.softwareGpu.test(gpu || '')) return { name: 'low', auto: true };
-    return { name: coarse || T.mobileGpu.test(gpu || '') ? 'mobile' : 'high', auto: true };
+    if (TLV.tune.render.softwareGpu.test(gpu || '')) return { name: 'low', auto: true };
+    // A phone or tablet is known by its finger, not by its GPU's name: a Snapdragon laptop reports an Adreno and keeps its desktop pick.
+    return { name: coarse ? 'mobile' : 'high', auto: true };
   };
 
   /** @returns {boolean} True on a device whose main pointer is a finger. Read before the context, whose antialias is fixed with it. */
