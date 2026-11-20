@@ -115,7 +115,8 @@ async function main() {
       assert.ok(await b.evaluate(() => document.querySelector('.board').classList.contains('driving')));
       assert.ok(await b.evaluate(() => document.querySelector('.board-row').classList.contains('picked')));
       assert.match(await text(b, '.board-row'), /the other driver is on the way/);
-      assert.match(await text(b, '.board-keys'), /keep the one you have/);
+      // The way back to the errand in hand is a button of its own, so a finger can use it as well as T.
+      assert.match(await text(b, '.board-keep'), /keep the one you have/);
       await shot(b, 'versus_board_driving');
       await b.keyboard.press('KeyT');
       await T.frame(b);
