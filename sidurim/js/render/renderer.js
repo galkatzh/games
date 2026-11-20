@@ -104,12 +104,22 @@
    * Chooses the preset.
    * @param {string} [asked] The quality param: low, med or high, or auto when the player has asked for nothing.
    * @param {string} [gpu] The GPU's name. Only auto reads it.
+   * @param {boolean} [coarse] The screen is driven by a finger: a phone or tablet, whatever its GPU calls itself. Only auto reads it.
    * @returns {{name:string, auto:boolean}} The preset, and whether the ladder runs.
    */
-  render.pickQuality = function (asked, gpu) {
+  render.pickQuality = function (asked, gpu, coarse) {
     if (asked === 'low' || asked === 'med' || asked === 'high') return { name: asked, auto: false };
-    return { name: TLV.tune.render.softwareGpu.test(gpu || '') ? 'low' : 'high', auto: true };
+    var T = TLV.tune.render;
+    if (T.softwareGpu.test(gpu || '')) return { name: 'low', auto: true };
+    return { name: coarse || T.mobileGpu.test(gpu || '') ? 'mobile' : 'high', auto: true };
   };
+
+  /** @returns {boolean} True on a device whose main pointer is a finger. Read before the context, whose antialias is fixed with it. */
+  function coarsePointer() {
+    var mm = window.matchMedia;
+    var nav = window.navigator || {};
+    return !!mm && mm('(pointer: coarse)').matches && (nav.maxTouchPoints || 0) > 0;
+  }
 
   /** @returns {string} The GPU's name, or '' if it will not say. Antialias is fixed once a context exists, so a throwaway one asks first. */
   function gpuName() {
@@ -256,7 +266,7 @@
     var t0 = window.performance.now();
     scratch = new THREE.Vector3();
     var asked = TLV.params && TLV.params.quality;
-    var pick = render.pickQuality(asked, T.quality[asked] ? '' : gpuName());
+    var pick = render.pickQuality(asked, T.quality[asked] ? '' : gpuName(), coarsePointer());
     var qName = pick.name;
     var Q = T.quality[qName];
     var pixel = Math.min(window.devicePixelRatio || 1, 2) * Q.pixelRatio;
@@ -363,6 +373,8 @@
    */
   render.frame = function (S, alpha, dtReal) {
     if (!R) return;
+    // A phone turned round can report its old size to the resize event and its new one a frame later. The canvas follows the window.
+    if (R.w !== window.innerWidth || R.h !== window.innerHeight) render.resize(window.innerWidth, window.innerHeight);
     dynamicResolution(dtReal);
     var gl = R.gl;
     gl.info.reset();

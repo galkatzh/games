@@ -210,6 +210,7 @@ js/ui/menus.js                                 WP-UI
 js/ui/bubbles.js                               WP-UI
 js/ui/audio.js                                 WP-UI
 js/ui/debug_overlay.js                         WP-UI
+js/ui/touch.js                                 WP-UI
 js/ui/ui.js                                    WP-UI
 content/index.js                               WP-CORE
 content/tlv_center/errands.js                  WP-GAME
@@ -393,7 +394,7 @@ TLV.manifest = {
     'js/render/signs.js','js/render/storefronts.js','js/render/landmarks.js','js/render/vehicles.js','js/render/people.js',
     'js/render/signal_heads.js','js/render/effects.js','js/render/camera.js','js/render/rearview.js','js/render/renderer.js',
     'js/ui/tune.js','js/ui/strings.js','js/ui/hud.js','js/ui/minimap.js','js/ui/cards.js','js/ui/versus.js','js/ui/menus.js',
-    'js/ui/bubbles.js','js/ui/audio.js','js/ui/debug_overlay.js','js/ui/ui.js',
+    'js/ui/bubbles.js','js/ui/audio.js','js/ui/debug_overlay.js','js/ui/touch.js','js/ui/ui.js',
     'js/app/main.js'
   ]
 };
@@ -1864,6 +1865,14 @@ TLV.foot.applyHit(S)                // stumble and invulnerability per GAME_DESI
 // bots.js
 TLV.bots.create(name, opts) -> controlSource(S) -> ControlState
    // names: 'idle','patrol','chaos','braker','errands'. All randomness comes from S.rng.bot
+
+// input.js: the on-screen controls (js/ui/touch.js calls these; input.sample merges them, so a touch drive replays like any other)
+TLV.input.touch.stick(x, y)         // finger offset over the stick's radius, each -1..1, y down. (0,0) is no finger
+TLV.input.touch.hold(name, on)      // 'space','horn','hazard','recover','interact'. A press also shows for one sample
+TLV.input.touch.tap(name)           // 'space','horn','interact': one sample
+TLV.input.touch.release()           // every finger off
+   // Stick forward: throttle from 0.10 rising as the square, past a 0.18 dead zone. Back: brake. Sideways: steer with a soft centre.
+   // On foot: the stick's angle, full from 70% out, through the camera's yaw. Touch never sets start or restart.
 ```
 
 Binding on WP-PLAYER:
@@ -2476,7 +2485,9 @@ Interpolate: `lerp(px, x, alpha)`, and `h` with `wrapPi`.
 
 ### 15.2 Writes
 
-Render and UI write nothing into `S`. Input is the only path from the browser to the sim, through `ControlState`, with two choices
+Render and UI write nothing into `S`. Input is the only path from the browser to the sim, through `ControlState`. The on-screen stick
+and buttons of a touch screen are input too: `js/ui/touch.js` owns the fingers and hands them to `TLV.input.touch`, which `input.sample`
+merges after the keys and the pad. There are two choices
 made on a screen as the exceptions: the title's difficulty (`TLV.game.setDifficulty`), and a shared day's lobby and board
 (`TLV.game.versus` and `TLV.net`, called only by `js/ui/versus.js`, section 13.5). Render also reads `S.versus.peers` for the other
 drivers' cars, which are drawn and are no `Vehicle`.
@@ -2564,6 +2575,7 @@ All optional. Parsed by `TLV.config.parse`. Browser and `createTLV({ params })` 
 | `net` | `trystero`, `local` | `trystero` | How the drivers of a shared day reach each other (section 13.5). `local` joins the tabs of one browser with a `BroadcastChannel` and no network | NET |
 | `room` | code | none | Opens the lobby and joins this room at once | UI |
 | `relay` | `ws://` or `wss://` URLs, comma separated | none | Signaling relays to use in place of Trystero's public ones | NET |
+| `touch` | `auto`, `on`, `off` | `auto` | The on-screen stick and buttons (`js/ui/touch.js`). `auto` shows them on a touch screen, and keys, a mouse or a pad hide them again | UI |
 
 ### 16.2 `TLV.debug`
 

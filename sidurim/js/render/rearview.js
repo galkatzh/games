@@ -32,7 +32,7 @@
   /** @param {THREE.Scene} scene Scene. @param {object} S Sim state. */
   rear.init = function (scene, S) {
     var cam = new THREE.PerspectiveCamera(Q.fovDeg, Q.w / Q.h, Q.near, Q.far);
-    R = { cam: cam, pref: 'auto', hold: 0, shown: false, box: null, look: new THREE.Vector3(), top: -1 };
+    R = { cam: cam, pref: 'auto', hold: 0, shown: false, box: null, look: new THREE.Vector3(), top: -1, lay: null, w: Q.w, h: Q.h, right: Q.marginRight };
     rear._makeFrame();
   };
 
@@ -46,6 +46,27 @@
       'width:' + Q.w + 'px;height:' + Q.h + 'px;right:' + (Q.marginRight - Q.border) + 'px';
     document.body.appendChild(box);
     R.box = box;
+  };
+
+  /**
+   * Moves and sizes the strip. The UI calls it for a touch screen, where the No-Claims bar is elsewhere and the screen is small. It
+   * keeps the strip's 4:1, so the camera's aspect never changes. null puts it back where GAME_DESIGN 18 has it.
+   * @param {?{w:number,right:number,top:number}} opts Width, gap from the right edge and top, in CSS pixels.
+   * @returns {?{w:number,h:number,right:number,top:number}} Where it now is, or null before init.
+   */
+  rear.layout = function (opts) {
+    if (!R) return null;
+    R.lay = opts ? { w: Math.max(80, Math.round(opts.w)), right: Math.round(opts.right), top: Math.round(opts.top) } : null;
+    R.w = R.lay ? R.lay.w : Q.w;
+    R.h = Math.round(R.w * Q.h / Q.w);
+    R.right = R.lay ? R.lay.right : Q.marginRight;
+    R.top = -1;
+    if (R.box) {
+      R.box.style.width = R.w + 'px';
+      R.box.style.height = R.h + 'px';
+      R.box.style.right = (R.right - Q.border) + 'px';
+    }
+    return { w: R.w, h: R.h, right: R.right, top: R.lay ? R.lay.top : Math.round(Math.max(Q.marginTop, window.innerHeight * Q.marginTopK)) };
   };
 
   /** @returns {boolean} True when the strip should be up this frame. */
@@ -111,7 +132,7 @@
   rear.frame = function (S, alpha, dtReal) {
     if (!R) return;
     var on = wanted(S, Math.min(dtReal, 0.1));
-    var top = Math.round(Math.max(Q.marginTop, window.innerHeight * Q.marginTopK));
+    var top = R.lay ? R.lay.top : Math.round(Math.max(Q.marginTop, window.innerHeight * Q.marginTopK));
     if (R.box) {
       if (on !== R.shown) R.box.style.display = on ? 'block' : 'none';
       if (top !== R.top) R.box.style.top = (top - Q.border) + 'px';
@@ -124,7 +145,7 @@
     if (vehicles && vehicles.solidPass) vehicles.solidPass(true);
     if (people && people.solidPass) people.solidPass(true);
     if (TLV.render.effects && TLV.render.effects.mirrorPass) TLV.render.effects.mirrorPass(true);
-    TLV.render.renderScene(R.cam, { x: window.innerWidth - Q.marginRight - Q.w, y: top, w: Q.w, h: Q.h });
+    TLV.render.renderScene(R.cam, { x: window.innerWidth - R.right - R.w, y: top, w: R.w, h: R.h });
     if (vehicles && vehicles.solidPass) vehicles.solidPass(false);
     if (people && people.solidPass) people.solidPass(false);
     if (TLV.render.effects && TLV.render.effects.mirrorPass) TLV.render.effects.mirrorPass(false);

@@ -2019,3 +2019,360 @@ button {
 
 .board-place { font-weight: 700; color: #6c5f4a; }
 .board-row.mine .board-place, .board-row.theirs .board-place, .board-row.locked .board-place { color: inherit; }
+
+/* ---- Touch screens (js/ui/touch.js) --------------------------------------------------------------------------------------------
+   Everything below applies only with html.touch / #ui-root.touch, which touch.js sets on a touch screen. The desktop layout above
+   is untouched. Sizes of things a thumb presses are in px and vmin, not em: the em is about 9 px on a phone held sideways, and a
+   button must stay a thumb wide. The safe-area insets keep the HUD clear of a notch and the home bar. */
+
+:root {
+  --sa-t: env(safe-area-inset-top, 0px);
+  --sa-r: env(safe-area-inset-right, 0px);
+  --sa-b: env(safe-area-inset-bottom, 0px);
+  --sa-l: env(safe-area-inset-left, 0px);
+}
+
+/* No page under the game to scroll, bounce, pull to refresh or zoom. */
+html.touch, html.touch body {
+  overscroll-behavior: none;
+  touch-action: none;
+  position: fixed;
+  inset: 0;
+}
+
+html.touch #game {
+  touch-action: none;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+html.touch #ui-root {
+  height: 100dvh;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html.touch button { touch-action: manipulation; }
+html.touch .credits-body, html.touch .ui-error-body, html.touch .board-rows { touch-action: pan-y; overscroll-behavior: contain; }
+html.touch .ui-error { -webkit-user-select: text; user-select: text; }
+
+/* The HUD round the safe area, and out of the thumbs' corners: the map and the speed go up under the money. */
+#ui-root.touch .hud-money { top: calc(0.6em + var(--sa-t)); left: calc(1em + var(--sa-l)); }
+#ui-root.touch .hud-hp { top: calc(0.75em + var(--sa-t)); right: calc(1em + var(--sa-r)); width: 16em; }
+#ui-root.touch .hud-map-stack { top: calc(6.4em + var(--sa-t)); bottom: auto; left: calc(1em + var(--sa-l)); width: 10em; }
+#ui-root.touch .hud-map { width: 10em; height: 10em; }
+#ui-root.touch .hud-street { font-size: 1.15em; max-width: 14em; }
+#ui-root.touch .hud-speed { top: calc(9.2em + var(--sa-t)); bottom: auto; right: auto; left: calc(12em + var(--sa-l)); text-align: left; }
+#ui-root.touch .hud-speed-digits { font-size: 2.6em; }
+#ui-root.touch .hud-chip { font-size: 1.35em; width: 23em; }
+#ui-root.touch .hud-prompt { bottom: calc(3.4em + var(--sa-b)); max-width: 50vw; white-space: normal; font-size: 1.75em; }
+#ui-root.touch .hud-toasts { bottom: calc(0.5em + var(--sa-b)); width: 50vw; font-size: 1.15em; }
+#ui-root.touch .hud-toasts.parking-view, #ui-root.touch .hud-prompt.parking-view { left: 50%; right: auto; transform: translateX(-50%); }
+#ui-root.touch .tag-rage.pinned { top: 19em; right: calc(1em + var(--sa-r)); }
+#ui-root.touch .hud-versus { top: calc(0.8em + var(--sa-t)); left: calc(16em + var(--sa-l)); font-size: 1.1em; }
+#ui-root.touch .hud-versus-hint { pointer-events: auto; min-height: 32px; padding: 0 12px; border-radius: 16px; background: var(--ink); color: #fff; }
+#ui-root.touch kbd.key, #ui-root.touch .hud-chip-index { font-size: max(11px, 1em); }
+#ui-root.touch .controls-line { display: none; }
+
+/* Title, end screen and pause: the lines a finger starts things with are buttons a thumb can find. */
+#ui-root.touch .title-head { top: calc(1em + var(--sa-t)); inset-inline-start: calc(2.6em + var(--sa-l)); }
+#ui-root.touch .title-foot { left: calc(2em + var(--sa-l)); right: calc(2em + var(--sa-r)); bottom: calc(0.7em + var(--sa-b)); pointer-events: none; }
+#ui-root.touch .title-foot button { pointer-events: auto; }
+#ui-root.touch .title-start { bottom: calc(2.7em + var(--sa-b)); font-size: 2.1em; min-height: 44px; }
+#ui-root.touch .title-online { bottom: calc(104px + var(--sa-b)); min-height: 40px; }
+#ui-root.touch .title-pick-keys { display: none; }
+#ui-root.touch .title-touch {
+  top: 54%;
+  bottom: auto;
+  left: 16%;
+  right: 16%;
+  transform: none;
+  padding: 0.3em 0.8em;
+  font-size: clamp(11px, 3.3vmin, 17px);
+}
+#ui-root.touch .end-restart { min-height: 48px; }
+#ui-root.touch .lang-btn, #ui-root.touch .pause-panel button, #ui-root.touch .credits-back, #ui-root.touch .lobby-back { min-height: 40px; }
+#ui-root.touch .pause-radio { font-size: 1.2em; color: #fff; }
+
+/* The board of a shared day: a thumb-high row each, and a list that scrolls on a short screen. */
+#ui-root.touch .board { top: calc(0.4em + var(--sa-t)); max-height: calc(100dvh - 0.8em - var(--sa-t) - var(--sa-b)); overflow-y: auto; font-size: 1.1em; width: min(44em, 72vw); margin-left: 0; left: 50%; transform: translateX(-50%); box-sizing: border-box; }
+#ui-root.touch .board.driving { top: calc(0.4em + var(--sa-t)); right: auto; left: 50%; max-height: 64dvh; font-size: 1em; width: min(40em, 60vw); }
+#ui-root.touch .board-row { min-height: 34px; }
+#ui-root.touch .board-row kbd { display: none; }
+#ui-root.touch .board-keep { min-height: 40px; }
+
+/* The lobby on a short screen, with the field a phone types the code into. */
+#ui-root.touch .lobby-panel { gap: 0.5em; }
+#ui-root.touch .lobby-title { font-size: 2.4em; }
+#ui-root.touch .lobby-code { font-size: 3.4em; }
+#ui-root.touch .lobby-choice { min-height: 48px; }
+
+/* The board's keep button, the lobby's code field and its link, everywhere: on a desktop they are clicked. */
+.board-keep {
+  display: block;
+  margin: 0.5em auto 0;
+  padding: 0.25em 0.9em 0.3em;
+  font-size: 0.95em;
+  font-weight: 700;
+  color: #fff;
+  background: var(--ink);
+  border-radius: 1em;
+}
+
+.lobby-code-input {
+  display: block;
+  width: 8em;
+  margin: 0.4em auto 0;
+  padding: 6px 10px;
+  font: 900 16px Arial, sans-serif;
+  letter-spacing: 0.3em;
+  text-align: center;
+  text-transform: uppercase;
+  color: var(--ink);
+  background: #fff;
+  border: 2px solid var(--sun);
+  border-radius: 8px;
+  pointer-events: auto;
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+.lobby-copy {
+  display: block;
+  margin: 0.5em auto 0;
+  font-size: 0.95em;
+  font-weight: 700;
+  color: var(--sun);
+  text-decoration: underline;
+}
+
+/* The overlay. The layer itself lets every touch through: only its controls take one. */
+.touch-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  --stick-r: clamp(48px, 14vmin, 72px);
+  --space: clamp(64px, 20vmin, 96px);
+  --small: clamp(48px, 14vmin, 68px);
+  --gap: 14px;
+  --edge: 24px;
+}
+
+.touch-probe {
+  position: fixed;
+  visibility: hidden;
+  pointer-events: none;
+  width: 0;
+  height: 0;
+  padding: var(--sa-t) var(--sa-r) var(--sa-b) var(--sa-l);
+}
+
+/* The stick's zone: the lower left, under the map, clear of the edge a phone keeps for its back gesture. */
+.tz-stick {
+  position: absolute;
+  left: calc(var(--edge) + var(--sa-l));
+  width: calc(45vw - var(--edge) - var(--sa-l));
+  top: 34dvh;
+  bottom: var(--sa-b);
+  pointer-events: auto;
+  touch-action: none;
+}
+
+.stick-ghost, .stick-base {
+  position: absolute;
+  width: calc(var(--stick-r) * 2);
+  height: calc(var(--stick-r) * 2);
+  box-sizing: border-box;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.45);
+  background: rgba(255, 255, 255, 0.14);
+  pointer-events: none;
+}
+
+.stick-ghost {
+  left: 4px;
+  bottom: 24px;
+  opacity: 0.35;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.55)) 50% 10% / 3px 14% no-repeat,
+    linear-gradient(rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.55)) 50% 90% / 3px 14% no-repeat,
+    linear-gradient(rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.55)) 10% 50% / 14% 3px no-repeat,
+    linear-gradient(rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.55)) 90% 50% / 14% 3px no-repeat,
+    rgba(255, 255, 255, 0.14);
+}
+
+.stick-base {
+  left: 0;
+  top: 0;
+  display: none;
+  opacity: 0.8;
+}
+
+.tz-stick.held .stick-base { display: block; }
+.tz-stick.held .stick-ghost { display: none; }
+
+.stick-knob {
+  position: absolute;
+  left: calc(50% - var(--stick-r) * 0.45);
+  top: calc(50% - var(--stick-r) * 0.45);
+  width: calc(var(--stick-r) * 0.9);
+  height: calc(var(--stick-r) * 0.9);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+.tz-stick.dim { opacity: 0.4; }
+.tz-stick.let-go .stick-base, .tz-stick.let-go .stick-ghost { border-color: var(--tomato); background-color: rgba(255, 70, 48, 0.35); }
+
+/* The buttons, round SPACE in the lower right. */
+.tb {
+  position: absolute;
+  width: var(--small);
+  height: var(--small);
+  pointer-events: auto;
+  touch-action: none;
+  transition: transform 0.06s ease-out, opacity 0.15s;
+}
+
+.tb-face {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  background: rgba(21, 18, 28, 0.55);
+  border: 2px solid rgba(255, 255, 255, 0.7);
+  color: #fff;
+  box-sizing: border-box;
+}
+
+.tb-ring {
+  position: absolute;
+  inset: -5px;
+  border-radius: 50%;
+  background: conic-gradient(var(--sun) calc(var(--fill, 0) * 1turn), transparent 0);
+  -webkit-mask: radial-gradient(circle, transparent calc(50% - 5px), #000 calc(50% - 4px));
+  mask: radial-gradient(circle, transparent calc(50% - 5px), #000 calc(50% - 4px));
+}
+
+.tb-icon { width: 46%; height: 46%; display: block; }
+.tb-icon svg { width: 100%; height: 100%; display: block; }
+.tb kbd.tb-cap { font-size: 10px; min-width: 0; padding: 0 3px; line-height: 1.3; }
+
+.tb-word {
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  transform: translateX(-50%);
+  margin-top: 2px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  color: #fff;
+  -webkit-text-stroke: 3px var(--ink);
+  paint-order: stroke fill;
+}
+
+.tb.down { transform: scale(0.92); }
+.tb.down .tb-face { background: rgba(255, 210, 31, 0.75); color: var(--ink); }
+.tb.dim { opacity: 0.4; }
+
+.tb-space {
+  width: var(--space);
+  height: var(--space);
+  right: calc(var(--edge) + var(--sa-r));
+  bottom: calc(20px + var(--sa-b));
+}
+
+.tb-out {
+  width: calc(var(--space) * 1.25);
+  height: calc(var(--space) * 1.25);
+  right: calc(var(--edge) + var(--sa-r));
+  bottom: calc(20px + var(--sa-b));
+}
+
+.tb-out .tb-face { background: rgba(255, 70, 48, 0.8); }
+
+.tb-horn {
+  right: calc(var(--edge) + var(--sa-r) + var(--space) + var(--gap));
+  bottom: calc(20px + var(--sa-b) + var(--space) * 0.15);
+}
+
+.tb-hazard {
+  right: calc(var(--edge) + var(--sa-r) + (var(--space) - var(--small)) / 2);
+  bottom: calc(20px + var(--sa-b) + var(--space) + var(--gap) + 12px);
+}
+
+.tb-recover {
+  right: calc(var(--edge) + var(--sa-r) + var(--space) + var(--gap));
+  bottom: calc(20px + var(--sa-b) + var(--space) + var(--gap) + 12px);
+}
+
+.tb-hazard .tb-face { border-color: var(--orange); }
+
+.tb.pulse { animation: touch-pulse 0.6s ease-in-out infinite; }
+
+@keyframes touch-pulse {
+  50% { transform: scale(1.08); }
+}
+
+/* Pause, the bay camera and the mirror: a row under the No-Claims bar and the rear-view strip. */
+.tu-row {
+  position: absolute;
+  top: var(--tu-top, calc(4em + var(--sa-t)));
+  right: calc(16px + var(--sa-r));
+  display: flex;
+  gap: 10px;
+}
+
+.tu {
+  width: 44px;
+  height: 44px;
+  box-sizing: border-box;
+  padding: 9px;
+  border-radius: 12px;
+  background: rgba(21, 18, 28, 0.55);
+  border: 2px solid rgba(255, 255, 255, 0.7);
+  color: #fff;
+  pointer-events: auto;
+  touch-action: none;
+}
+
+.tu svg { width: 100%; height: 100%; display: block; }
+
+/* Over the whole screen while an encounter's comic card is up: a tap anywhere goes on. */
+.touch-catch {
+  position: absolute;
+  inset: 0;
+  pointer-events: auto;
+  touch-action: none;
+}
+
+/* The card that asks for the phone sideways. Over everything but an error. */
+.touch-rotate {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: 24px;
+  box-sizing: border-box;
+  pointer-events: auto;
+  touch-action: none;
+  background: #1f8fb5;
+  color: #fff;
+  text-align: center;
+}
+
+.touch-rotate-icon { width: 96px; height: 96px; color: var(--sun); }
+.touch-rotate-icon svg { width: 100%; height: 100%; }
+.touch-rotate-text { font-size: clamp(16px, 5vw, 28px); font-weight: 900; line-height: 1.25; max-width: 18em; }

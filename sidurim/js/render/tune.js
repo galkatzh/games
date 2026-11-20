@@ -66,13 +66,17 @@
     maskMPerPx: 2.5,
     maskBatch: 240,
 
-    // Quality presets. With no quality asked for, a software GPU starts on low and any other on high, and the ladder takes over.
+    // Quality presets. With no quality asked for, a software GPU starts on low, a phone or tablet on mobile and any other on high, and the
+    // ladder takes over. mobile keeps the sun's shadows at a smaller map, and draws fewer pixels than a phone's three per CSS pixel.
     quality: {
       low: { pixelRatio: 0.75, shadow: 0, l1M: 500, antialias: false },
+      mobile: { pixelRatio: 0.75, shadow: 512, l1M: 550, antialias: false },
       med: { pixelRatio: 1, shadow: 1024, l1M: 600, antialias: true },
       high: { pixelRatio: 1, shadow: 1024, l1M: 700, antialias: true }
     },
     softwareGpu: /swiftshader|llvmpipe|softpipe|software|basic render/i,
+    /** Phone and tablet GPUs. Not 'Apple GPU', which a Mac's Safari reports too: an iPhone is told apart by its coarse pointer. */
+    mobileGpu: /adreno|mali|powervr|xclipse|immortalis/i,
 
     // The ladder: dynamic resolution. Frame times are read in windows, so one long frame moves nothing.
     dynResMs: 26,        // A window's mean above this goes down a rung

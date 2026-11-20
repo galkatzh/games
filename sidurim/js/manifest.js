@@ -29,7 +29,7 @@
       'js/render/signs.js', 'js/render/storefronts.js', 'js/render/landmarks.js', 'js/render/vehicles.js', 'js/render/people.js',
       'js/render/signal_heads.js', 'js/render/effects.js', 'js/render/camera.js', 'js/render/rearview.js', 'js/render/renderer.js',
       'js/ui/tune.js', 'js/ui/strings.js', 'js/ui/hud.js', 'js/ui/minimap.js', 'js/ui/cards.js', 'js/ui/versus.js', 'js/ui/menus.js',
-      'js/ui/bubbles.js', 'js/ui/audio.js', 'js/ui/debug_overlay.js', 'js/ui/ui.js',
+      'js/ui/bubbles.js', 'js/ui/audio.js', 'js/ui/debug_overlay.js', 'js/ui/touch.js', 'js/ui/ui.js',
       'js/app/main.js'
     ]
   };

@@ -250,6 +250,12 @@
     ui.cards.relabel(sim);
     ui.menus.relabel(sim);
     ui.versus.relabel(sim);
+    if (ui.touch && ui.touch.relabel) ui.touch.relabel();
+  };
+
+  /** @returns {boolean} True while the on-screen stick and buttons are how this page is played (js/ui/touch.js). */
+  ui.touchMode = function () {
+    return !!(ui.touch && ui.touch.active && ui.touch.active());
   };
 
   /** The language at boot: the URL if it says, then the last choice, then English. */
@@ -461,10 +467,14 @@
     hudParam = S.params.hud === 0 ? 0 : 1;
     ui.strings.setLang(startLang(S));
     applyLang();
+    // Touch or keys is settled before anything is built, so the first labels are the right ones.
+    if (ui.touch && ui.touch.prepare) ui.touch.prepare(root, S);
     ui.bubbles.build(root);
     ui.hud.build(root, S);
     ui.minimap.build(ui.hud.mapSlot(), S);
     ui.cards.build(root, S);
+    // After the cards and before the board and the screens, so all of those are drawn over the stick and buttons.
+    if (ui.touch && ui.touch.build) ui.touch.build(root, S);
     // Before the menus, so its key listener is ahead of theirs.
     ui.versus.build(root, S);
     ui.menus.build(root, S);
@@ -495,6 +505,7 @@
     ui.bubbles.frame(S, alpha, dt);
     ui.cards.frame(S, dt);
     ui.menus.frame(S);
+    if (ui.touch && ui.touch.frame) ui.touch.frame(S, dtReal);
     ui.versus.frame(S, showHud);
     ui.debugOverlay.frame(S, dtReal);
     TLV.audio.frame(S, dt);

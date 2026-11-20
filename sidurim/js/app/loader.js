@@ -6,12 +6,25 @@
 
   var INDEX_FILES = ['data/maps/index.js', 'content/index.js', 'data/assets/index.js', 'data/sounds/index.js'];
 
-  /** Added here, not in index.html, whose contents ARCHITECTURE 4.1 fixes. Without it a phone lays the page out 980 wide and shrinks it. */
+  /**
+   * Added here, not in index.html, whose contents ARCHITECTURE 4.1 fixes. Without the viewport a phone lays the page out 980 wide and
+   * shrinks it. No zoom: two thumbs on the stick and the buttons would otherwise pinch the street away. viewport-fit lets the HUD use the
+   * corners round a notch, through env(safe-area-inset-*) in css/ui.css. The rest is for a phone that keeps the game on its home screen.
+   */
   function setViewport() {
-    var meta = document.createElement('meta');
-    meta.name = 'viewport';
-    meta.content = 'width=device-width, initial-scale=1';
-    document.head.appendChild(meta);
+    var tags = [
+      ['viewport', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover'],
+      ['theme-color', '#2c3440'],
+      ['mobile-web-app-capable', 'yes'],
+      ['apple-mobile-web-app-capable', 'yes'],
+      ['apple-mobile-web-app-status-bar-style', 'black-translucent']
+    ];
+    tags.forEach(function (tag) {
+      var meta = document.createElement('meta');
+      meta.name = tag[0];
+      meta.content = tag[1];
+      document.head.appendChild(meta);
+    });
   }
 
   /** A ?map= value may be a local script path, like createTLV's map option, but never a URL or a climb out of the game. */

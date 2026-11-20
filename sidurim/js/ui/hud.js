@@ -613,6 +613,7 @@
     var T = TLV.tune.ui;
     var v = Math.abs(S.vehicles[0].v);
     var stuck = stuckNow(S, dt);
+    view.stuckNow = stuck;
     if (g.phase === 'HOLD') {
       var park = g.park;
       if (park.kind === 'CURB') return { text: t('park.CURB') };
@@ -1508,6 +1509,11 @@
   };
 
   /** @returns {boolean} True while the HUD is on screen. */
+  /** @returns {boolean} True while the tow is on offer: the car is getting nowhere. Whatever the prompt shows, the R button can. */
+  hud.towOffered = function () {
+    return !!(view && view.stuckNow);
+  };
+
   hud.isLive = function () {
     return !!dom && !dom.box.classList.contains('off');
   };

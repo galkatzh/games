@@ -39,7 +39,9 @@
     // A shared day (GAME_DESIGN 26): how peers are reached, a room to join at once, and relays to use in place of the public ones.
     net: { type: 'enum', values: ['trystero', 'local'], def: 'trystero' },
     room: { type: 'string', def: null },
-    relay: { type: 'string', def: null }
+    relay: { type: 'string', def: null },
+    // The on-screen stick and buttons: auto shows them on a touch screen, on always, off never.
+    touch: { type: 'enum', values: ['auto', 'on', 'off'], def: 'auto' }
   };
 
   /** Warns about a value that cannot be used and yields the default. */

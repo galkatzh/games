@@ -13,7 +13,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 const read = (f) => fs.readFileSync(path.join(ROOT, f), 'utf8');
 
 const TLV = createTLV({
-  files: ['sim', 'js/ui/tune.js', 'js/ui/strings.js', 'js/ui/hud.js', 'js/ui/bubbles.js', 'js/ui/minimap.js', 'js/ui/ui.js'],
+  files: ['sim', 'js/ui/tune.js', 'js/ui/strings.js', 'js/ui/hud.js', 'js/ui/bubbles.js', 'js/ui/minimap.js', 'js/ui/touch.js', 'js/ui/ui.js'],
   map: null, content: false, allowMissing: true
 });
 const { table } = TLV.ui.strings;
@@ -88,12 +88,63 @@ test('the bay line tells a car to slow, and neither language says to keep rollin
 });
 
 test('every screen a person without a keyboard or a picture sees is in both languages', () => {
-  for (const key of ['title.touch', 'lost.title', 'lost.wait', 'lost.reload', 'lost.button', 'pause.resumePad', 'chase.thisWay', 'knife.CHASE_ROUND']) {
+  for (const key of ['title.touch', 'touch.rotate', 'lost.title', 'lost.wait', 'lost.reload', 'lost.button', 'pause.resumePad', 'chase.thisWay', 'knife.CHASE_ROUND']) {
     assert.ok(table.en[key] && table.he[key], key);
   }
-  assert.match(table.en['title.touch'], /KEYBOARD/);
-  assert.match(table.en['title.touch'], /GAMEPAD/);
-  assert.match(table.he['title.touch'], /מקלדת/);
+  // A phone is told where the stick and the buttons are, and to hold it sideways.
+  assert.match(table.en['title.touch'], /STICK/);
+  assert.match(table.en['title.touch'], /SIDEWAYS/);
+  assert.match(table.he['title.touch'], /סטיק/);
+  assert.match(table.he['touch.rotate'], /לרוחב/);
+});
+
+/** The keycaps the on-screen buttons carry: a line that names only these points at a button a phone has. */
+const OVERLAY_CAPS = new Set(['SPACE', 'Q', 'R', 'E', 'H']);
+
+test('on a touch screen no line names a key the phone does not have', () => {
+  const caps = (s) => (s.match(/\[([^\]]+)\]/g) || []).map((c) => c.slice(1, -1));
+  // Named by a pad button, and shown only with a pad.
+  const padOnly = new Set(['pause.resumePad']);
+  for (const key of Object.keys(table.en)) {
+    if (key.endsWith('@touch') || padOnly.has(key)) continue;
+    if (caps(table.en[key]).every((c) => OVERLAY_CAPS.has(c))) continue;
+    assert.ok(table.en[`${key}@touch`] !== undefined, `${key} names ${caps(table.en[key]).join(' ')} and has no @touch twin`);
+  }
+  for (const key of ['title.start', 'resolve.skip', 'board.keys']) assert.ok(table.en[`${key}@touch`] !== undefined, key);
+  for (const key of Object.keys(table.en).filter((k) => k.endsWith('@touch'))) {
+    assert.ok(table.en[key.slice(0, -'@touch'.length)] !== undefined, `${key} twins nothing`);
+    for (const lang of ['en', 'he']) {
+      for (const c of caps(table[lang][key])) assert.ok(OVERLAY_CAPS.has(c), `${lang} ${key} names ${c}`);
+    }
+  }
+});
+
+test('the twin is used only while touch is on, in either language', () => {
+  const s = TLV.ui.strings;
+  try {
+    assert.strictEqual(s.t('prompt.drive'), table.en['prompt.drive']);
+    s.setTouch(true);
+    assert.strictEqual(s.t('prompt.drive'), table.en['prompt.drive@touch']);
+    assert.strictEqual(s.t('prompt.handbrake'), table.en['prompt.handbrake'], 'no twin: the plain line');
+    s.setLang('he');
+    assert.strictEqual(s.t('prompt.drive'), table.he['prompt.drive@touch']);
+  } finally {
+    s.setTouch(false);
+    s.setLang('en');
+  }
+  assert.strictEqual(s.t('prompt.drive'), table.en['prompt.drive']);
+});
+
+test('the overlay offers park badly exactly where the sim would take it', () => {
+  const T = TLV.tune.game;
+  const last = T.legs.length - 1;
+  for (const index of [0, 3, last]) {
+    for (const d of [0, 39, 41, 149, 151, 400]) {
+      const S = { game: { errandIndex: index, errand: { doorX: 10, doorY: -4 } }, player: { veh: { x: 10 + d * 0.6, y: -4 + d * 0.8 } } };
+      assert.strictEqual(TLV.ui.touch._qReach(S), TLV.game.parking._qReaches(S), `errand ${index}, ${d} m`);
+    }
+  }
+  assert.strictEqual(TLV.ui.touch._qReach({ game: { errand: null }, player: { veh: { x: 0, y: 0 } } }), false);
 });
 
 test('every errand-level id the sim can send has its text', () => {

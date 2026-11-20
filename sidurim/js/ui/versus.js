@@ -87,6 +87,54 @@
     if (sim && game().requestStart(sim)) TLV.audio.ui('click');
   }
 
+  /** Joining: the code is asked for, in the field a phone types into. */
+  function askCode() {
+    lobby = 'code';
+    typed = '';
+    if (dom && dom.lobbyInput) {
+      dom.lobbyInput.value = '';
+      // Its box is shown by the next frame. A field in a hidden box cannot take the focus, so both are shown now.
+      u().show(dom.lobbyRoom, true);
+      u().show(dom.lobbyChoices, false);
+      u().show(dom.lobbyInput, true);
+      try {
+        dom.lobbyInput.focus({ preventScroll: true });
+      } catch (err) {
+        dom.lobbyInput.focus();
+      }
+    }
+    TLV.audio.ui('click');
+  }
+
+  /** @returns {string} A link that opens this room, or '' where the page has no address to share (file://). */
+  function roomLink() {
+    var room = net().state().room;
+    var loc = window.location;
+    if (!room || !/^https?:$/.test(loc.protocol)) return '';
+    return loc.origin + loc.pathname + '?room=' + room;
+  }
+
+  /** Puts the room's link on the clipboard, for a message to the other driver. */
+  function copyLink() {
+    var link = roomLink();
+    var clip = window.navigator && window.navigator.clipboard;
+    if (!link || !clip || typeof clip.writeText !== 'function') return;
+    clip.writeText(link).then(function () {
+      if (dom) u().setText(dom.lobbyCopy, t('lobby.copied'));
+    }, function () {});
+    TLV.audio.ui('click');
+  }
+
+  /** The board up on the way to an errand, or down again with that errand kept: T, the list button, or the keep button. */
+  function toggleList() {
+    if (!sim || !game().active(sim)) return;
+    var view = game().view(sim);
+    if (view.open) game().keep(sim);
+    else game().reconsider(sim);
+    takenNote = false;
+    TLV.audio.ui('click');
+  }
+
   /** Leaves a room for the lobby's two choices, or the lobby for the title. */
   function back() {
     var inRoom = net().state().status !== 'off';
@@ -119,14 +167,31 @@
     dom.lobbyLine = el('div', 'lobby-line', panel);
     var choices = dom.lobbyChoices = el('div', 'lobby-choices', panel);
     dom.lobbyHost = button(choices, 'lobby-choice', host);
-    dom.lobbyJoin = button(choices, 'lobby-choice', function () {
-      lobby = 'code';
-      typed = '';
-    });
+    dom.lobbyJoin = button(choices, 'lobby-choice', askCode);
     var roomBox = dom.lobbyRoom = el('div', 'lobby-room', panel);
     dom.lobbyCodeLabel = el('div', 'lobby-code-label', roomBox);
     dom.lobbyCode = el('div', 'lobby-code', roomBox);
     dom.lobbyCode.dir = 'ltr';
+    // A real text field, so a phone opens its keyboard for the code. Keys typed anywhere else on the lobby still reach the code too.
+    var field = dom.lobbyInput = el('input', 'lobby-code-input off', roomBox);
+    field.type = 'text';
+    field.dir = 'ltr';
+    field.maxLength = net().CODE_LEN;
+    field.setAttribute('inputmode', 'text');
+    field.setAttribute('autocapitalize', 'characters');
+    field.setAttribute('autocomplete', 'off');
+    field.setAttribute('autocorrect', 'off');
+    field.setAttribute('spellcheck', 'false');
+    field.setAttribute('enterkeyhint', 'go');
+    field.addEventListener('input', function () {
+      typed = net().cleanCode(field.value);
+      if (field.value !== typed) field.value = typed;
+      if (typed.length === net().CODE_LEN && sim) {
+        field.blur();
+        net().open(sim, typed);
+      }
+    });
+    dom.lobbyCopy = button(roomBox, 'lobby-copy off', copyLink);
     dom.lobbyStatus = el('div', 'lobby-status', panel);
     dom.lobbyStart = button(panel, 'lobby-start', start);
     dom.lobbyNote = el('div', 'lobby-note', panel);
@@ -136,13 +201,14 @@
     dom.boardTitle = el('div', 'board-title', board);
     dom.boardRows = el('div', 'board-rows', board);
     dom.boardKeys = el('div', 'board-keys', board);
+    dom.boardKeep = button(board, 'board-keep off', toggleList);
 
     var bar = dom.bar = el('div', 'hud-versus off', root);
     dom.barThem = el('span', 'hud-versus-them', bar);
     dom.barMoney = el('span', 'hud-versus-money', bar);
     dom.barMoney.dir = 'ltr';
     dom.barLeft = el('span', 'hud-versus-left', bar);
-    dom.barHint = el('span', 'hud-versus-hint', bar);
+    dom.barHint = button(bar, 'hud-versus-hint', toggleList);
 
     var end = dom.end = el('div', 'end-versus off', root);
     dom.endVerdict = el('div', 'end-versus-verdict', end);
@@ -179,6 +245,8 @@
     u().setRich(dom.lobbyJoin, t('lobby.join'));
     u().setRich(dom.lobbyStart, t('lobby.start'));
     u().setText(dom.lobbyNote, t('lobby.note'));
+    u().setText(dom.lobbyCopy, t('lobby.copyLink'));
+    dom.boardKeep._text = null;
     u().setText(dom.barThem, t('versus.them'));
     u().setRich(dom.barHint, t('versus.hint'));
     u().setText(dom.endYouLabel, t('end.versus.you'));
@@ -244,11 +312,7 @@
       return;
     }
     if (e.code === 'KeyH') host();
-    else if (e.code === 'KeyJ') {
-      lobby = 'code';
-      typed = '';
-      TLV.audio.ui('click');
-    }
+    else if (e.code === 'KeyJ') askCode();
   }
 
   function keyDown(e) {
@@ -258,6 +322,12 @@
     // read as a key of that day.
     if (lobby !== 'closed' && phase !== 'TITLE') lobby = 'closed';
     if (lobby !== 'closed') {
+      // Typing into the code field is the field's: only Escape and Enter are the lobby's. The key still types, because its default is
+      // kept, and it goes no further, so no letter of a code ever reaches the title's 'any key'.
+      if (dom && e.target === dom.lobbyInput && e.code !== 'Escape' && e.code !== 'Enter' && e.code !== 'NumpadEnter') {
+        e.stopImmediatePropagation();
+        return;
+      }
       lobbyKey(e);
       swallow(e);
       return;
@@ -280,12 +350,7 @@
       }
     }
     if (e.code === 'KeyT') {
-      if (!e.repeat) {
-        if (view.open) game().keep(sim);
-        else game().reconsider(sim);
-        takenNote = false;
-        TLV.audio.ui('click');
-      }
+      if (!e.repeat) toggleList();
       swallow(e);
     }
   }
@@ -364,6 +429,11 @@
     for (var i = 0; i < net().CODE_LEN; i++) slots += i < code.length ? code.charAt(i) : '·';
     u().setText(dom.lobbyCode, slots);
     u().setText(dom.lobbyCodeLabel, t(inRoom ? 'lobby.code' : 'lobby.typeCode'));
+    var asking = !inRoom && lobby === 'code';
+    u().show(dom.lobbyInput, asking);
+    if (!asking && dom.lobbyInput.value) dom.lobbyInput.value = '';
+    else if (asking && document.activeElement !== dom.lobbyInput && dom.lobbyInput.value !== typed) dom.lobbyInput.value = typed;
+    u().show(dom.lobbyCopy, state.status === 'open' && !!roomLink());
     var others = 0;
     var odd = 0;
     var out = 0;
@@ -425,7 +495,7 @@
         el('span', 'board-note', row, t('board.' + r.state));
       }
     });
-    u().setRich(dom.boardKeys, S.game.errand ? t('board.keys') + '   ' + t('board.keep') : t('board.keys'));
+    u().setRich(dom.boardKeys, t('board.keys'));
   }
 
   function frameBoard(S, view) {
@@ -438,6 +508,9 @@
     var driving = phase !== 'CARD';
     dom.board.classList.toggle('driving', driving);
     paintBoard(S, board, driving);
+    // With an errand in hand the board can be put away again, by T or by this.
+    u().show(dom.boardKeep, !!S.game.errand);
+    if (S.game.errand) u().setRich(dom.boardKeep, t('board.keep'));
   }
 
   function frameBar(S, view, visible) {

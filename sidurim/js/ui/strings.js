@@ -14,7 +14,7 @@
       'title.tag': 'Seven errands. One parking spot. Everyone wants it.',
       'title.gan': 'Last errand: picking the kid up from the kindergarten, the gan.',
       'title.start': 'PRESS ANY KEY. THE GAN WILL NOT WAIT.',
-      'title.touch': 'THIS GAME NEEDS A KEYBOARD OR A GAMEPAD. TOUCH CANNOT DRIVE IT.',
+      'title.touch': 'STICK ON THE LEFT, BUTTONS ON THE RIGHT. HOLD THE PHONE SIDEWAYS.',
       'title.pick': 'WHICH TUESDAY WOULD YOU LIKE?',
       'title.pickKeys': '[←] [→] to choose',
       'title.langKey': '[L]',
@@ -291,6 +291,44 @@
       'end.versus.ready': 'READY. WAITING FOR THE OTHER DRIVER.',
       'end.versus.theyReady': 'The other driver wants another day.',
 
+      // On a touch screen (js/ui/touch.js). A key ending '@touch' replaces its plain twin there: see strings.t.
+      'title.start@touch': 'TAP TO START. THE GAN WILL NOT WAIT.',
+      'title.pickKeys@touch': 'Tap one to choose',
+      'title.langKey@touch': '',
+      'title.credits@touch': 'Credits',
+      'title.online@touch': 'Two drivers, one list: play online',
+      'pause.resume@touch': 'Back to the balagan',
+      'pause.soundOn@touch': 'Sound on',
+      'pause.soundOff@touch': 'Sound off',
+      'pause.credits@touch': 'Credits',
+      'radio.tuning@touch': 'Radio: finding a station',
+      'radio.off@touch': 'Radio off',
+      'radio.none@touch': 'No station answers. The radio gives up.',
+      'credits.back@touch': 'Back',
+      'prompt.drive@touch': 'STICK UP: GO. SIDEWAYS: STEER',
+      'prompt.launch@touch': 'GREEN! STICK UP BEFORE THE HONK',
+      'prompt.missed.BACK@touch': 'MISSED IT. PULL THE STICK BACK',
+      'prompt.missed.BACK_OR_Q@touch': 'MISSED IT. PULL THE STICK BACK, OR HOLD [Q]: PARK BADLY',
+      'resolve.skip@touch': 'Tap to continue',
+      'end.restart@touch': 'ANOTHER TUESDAY',
+      'end.restartRevoked@touch': 'START AGAIN',
+      'lobby.host@touch': 'Open a room',
+      'lobby.join@touch': 'Join a room',
+      'lobby.start@touch': 'START THE DAY',
+      'lobby.back@touch': 'Back',
+      'lobby.leave@touch': 'Leave the room',
+      'board.keys@touch': 'Tap an errand.',
+      'board.keep@touch': 'Keep the one you have',
+      'versus.hint@touch': 'The list',
+      'end.versus.restart@touch': 'ANOTHER DAY TOGETHER',
+      'touch.rotate': 'TURN THE PHONE SIDEWAYS',
+      'touch.dodge': 'dodge',
+      'touch.out': 'out',
+      'touch.radio': 'Next station',
+      'touch.pinch': 'The page is zoomed in. Pinch it back to see the street.',
+      'lobby.copyLink': 'Copy the room link',
+      'lobby.copied': 'Link copied',
+
       'error.title': 'Something fell off the back of the build',
       'error.close': 'Close'
     },
@@ -301,7 +339,7 @@
       'title.tag': 'שבעה סידורים. חניה אחת. כולם רוצים אותה.',
       'title.gan': 'הסידור האחרון: לאסוף את הילד מהגן.',
       'title.start': 'ללחוץ על מקש כלשהו. הגן לא מחכה.',
-      'title.touch': 'בשביל המשחק צריך מקלדת או שלט. עם מסך מגע אי אפשר לנהוג.',
+      'title.touch': 'הסטיק משמאל, הכפתורים מימין. להחזיק את הטלפון לרוחב.',
       'title.pick': 'איזה יום שלישי בא לך?',
       'title.pickKeys': '[←] [→] לבחירה',
       'title.langKey': '[L]',
@@ -578,6 +616,43 @@
       'end.versus.ready': 'מוכנים. מחכים לנהג השני.',
       'end.versus.theyReady': 'הנהג השני רוצה עוד יום.',
 
+      'title.start@touch': 'ללחוץ כדי להתחיל. הגן לא מחכה.',
+      'title.pickKeys@touch': 'ללחוץ כדי לבחור',
+      'title.langKey@touch': '',
+      'title.credits@touch': 'קרדיטים',
+      'title.online@touch': 'שני נהגים, רשימה אחת: משחק ברשת',
+      'pause.resume@touch': 'חזרה לבלגן',
+      'pause.soundOn@touch': 'הסאונד פועל',
+      'pause.soundOff@touch': 'הסאונד כבוי',
+      'pause.credits@touch': 'קרדיטים',
+      'radio.tuning@touch': 'הרדיו מחפש תחנה',
+      'radio.off@touch': 'הרדיו כבוי',
+      'radio.none@touch': 'אף תחנה לא עונה. הרדיו מוותר.',
+      'credits.back@touch': 'חזרה',
+      'prompt.drive@touch': 'הסטיק קדימה: גז. לצדדים: הגה',
+      'prompt.launch@touch': 'ירוק! הסטיק קדימה לפני שצופרים לך',
+      'prompt.missed.BACK@touch': 'פספסת. למשוך את הסטיק אחורה',
+      'prompt.missed.BACK_OR_Q@touch': 'פספסת. למשוך את הסטיק אחורה, או להחזיק [Q] ולחנות על הפנים',
+      'resolve.skip@touch': 'ללחוץ כדי להמשיך',
+      'end.restart@touch': 'עוד יום שלישי',
+      'end.restartRevoked@touch': 'להתחיל מחדש',
+      'lobby.host@touch': 'לפתוח חדר',
+      'lobby.join@touch': 'להצטרף לחדר',
+      'lobby.start@touch': 'להתחיל את היום',
+      'lobby.back@touch': 'חזרה',
+      'lobby.leave@touch': 'לצאת מהחדר',
+      'board.keys@touch': 'ללחוץ על סידור.',
+      'board.keep@touch': 'להישאר עם מה שיש',
+      'versus.hint@touch': 'הרשימה',
+      'end.versus.restart@touch': 'עוד יום ביחד',
+      'touch.rotate': 'לסובב את הטלפון לרוחב',
+      'touch.dodge': 'להתחמק',
+      'touch.out': 'החוצה',
+      'touch.radio': 'התחנה הבאה',
+      'touch.pinch': 'התצוגה מוגדלת. להקטין אותה בשתי אצבעות כדי לראות את הרחוב.',
+      'lobby.copyLink': 'להעתיק את הקישור לחדר',
+      'lobby.copied': 'הקישור הועתק',
+
       'error.title': 'משהו נפל מהמשאית',
       'error.close': 'סגירה'
     }
@@ -631,6 +706,18 @@
 
   var lang = 'en';
 
+  var touchMode = false;
+
+  /** @param {boolean} on True while the on-screen controls are how the page is played: the '@touch' twins are used. */
+  strings.setTouch = function (on) {
+    touchMode = !!on;
+  };
+
+  /** @returns {boolean} True while the '@touch' twins are used. */
+  strings.touch = function () {
+    return touchMode;
+  };
+
   /** @returns {string} The current language. */
   strings.lang = function () {
     return lang;
@@ -655,6 +742,8 @@
    * @returns {string} Display text. An unknown key is returned as it stands, so a miss shows instead of an empty box.
    */
   strings.t = function (key, vars) {
+    // On a touch screen a string that names keys a phone does not have has a twin that names what is on the screen instead.
+    if (touchMode && strings.table.en[key + '@touch'] !== undefined) key += '@touch';
     var text = strings.table[lang][key];
     if (text === undefined) text = strings.table.en[key];
     if (text === undefined) return key;

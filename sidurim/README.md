@@ -12,6 +12,9 @@ Road behaviour is the joke, not who people are. Nothing in it is graphic.
   is every threshold of the automatic quality ladder.
 - **Only Chromium has drawn it.** Firefox loaded the scripts but could not create WebGL on the test machine, and WebKit was not tried.
   A real gamepad, a real phone and a WebGL1-only GPU were only emulated.
+- **No finger has touched it.** The on-screen stick and buttons were driven by emulated touch in headless Chromium, two fingers at once,
+  on an emulated 844 by 390 phone. No real phone, iPhone Safari above all, has run it, and the stick's feel (its dead zones and the
+  throttle curve in `js/input/input.js`) was worked out from the car's equations, not from a thumb.
 - **Playing online has never crossed the internet.** Two pages of one browser have played a shared day through the real Trystero
   library and a real WebRTC data channel, with the signaling relay on the same machine. The public relays, two different networks,
   and two people at two keyboards are all untried. Nobody knows yet how the board feels to race over.
@@ -29,7 +32,23 @@ python3 -m http.server 8000
 
 Then open <http://localhost:8000/>.
 
-You need a browser with WebGL2, and a keyboard or a gamepad. There is no touch support.
+You need a browser with WebGL2, and a keyboard, a gamepad or a touch screen.
+
+### On a phone
+
+A phone cannot open a file from its own storage as a web page, so serve the folder from a computer on the same network and open it
+there:
+
+```sh
+python3 -m http.server 8000 --bind 0.0.0.0
+```
+
+Then open `http://<the computer's address on the network>:8000/` on the phone. Hold the phone sideways: held upright, the game asks you
+to turn it, and a run in progress waits on the pause screen. On Android, tapping to start also hides the browser's bars and locks
+the screen sideways. iPhone Safari allows neither, so there the game plays inside the page.
+
+The game shows its on-screen controls by itself on a touch screen, and hides them again as soon as a key, a mouse or a gamepad is used.
+`?touch=on` or `?touch=off` decides for it. Touch is drawn from `js/ui/touch.js`.
 
 ## Controls
 
@@ -61,6 +80,24 @@ start line, or press Start on a gamepad. Modifier and function keys do nothing t
 O opens the lobby for playing online, and starts nothing.
 
 At the end of a run, Enter or R starts another, or Start on a gamepad. Left and Right, or 1 and 2, change the difficulty first.
+
+### Touch
+
+On a touch screen the lower left of the screen is the stick, and the buttons are in the lower right, in both languages. Put a thumb
+down anywhere in the stick's half and the stick starts there. In the car, up is the gas, down is the brake and then reverse, and sideways
+steers. The first part of the way up is a crawl, for parking. On foot the stick runs you the way you push it, relative to the camera.
+
+| Button | Does | Key |
+|---|---|---|
+| SPACE, the big one | Handbrake. On foot, sidestep | Space |
+| H | Horn | H |
+| Q, near the door | Hold to park badly. Its ring fills as you hold | Q |
+| R, when you are stuck | Hold to tow back to the road | R |
+| E, during the knife | Out the passenger side. It takes SPACE's place | E |
+| Pause, camera, mirror | The row under the No-Claims bar | Esc, C, V |
+
+The prompts name the same letters the buttons carry, so `HOLD [Q]` means the button with a Q on it. Tap the start line to start the
+day, the cards to choose the difficulty, and the restart line at the end. Mute, the radio and the credits are on the pause screen.
 
 Playing online adds three keys: O on the title card opens the lobby, a digit picks an errand from the board, and T puts the board up
 again on the way to one. See [Playing online](#playing-online).
@@ -546,6 +583,7 @@ node tests/e2e/replay.e2e.cjs
 node tests/e2e/extensibility.e2e.cjs
 node tests/e2e/versus.e2e.cjs
 node tests/e2e/online.e2e.cjs
+node tests/ui/touch.e2e.cjs
 node tests/ui/ui.e2e.cjs
 node tests/render/city.e2e.cjs
 node tests/render/shots.e2e.cjs
@@ -665,6 +703,7 @@ any other number counts as 1. An unknown parameter is ignored, and a repeated on
 | `radio` | `auto`, `on`, `off` | `auto` | The car radio. `auto` plays it, except in a browser that reports itself driven by automation (`navigator.webdriver`), so no browser test reaches the network. B's saved choice also applies | Warns, `auto` |
 | `hud` | 0, 1 | 1 | Hides the HUD for clean screenshots | Warns, stays 1 |
 | `timescale` | number | 1 | Multiplies loop speed. Changes neither `DT` nor the sim's own slow motion | Not a number: warns, 1. 0 or less: clamped to 0.001, which all but stops the game |
+| `touch` | `auto`, `on`, `off` | `auto` | The on-screen stick and buttons. `auto` shows them on a touch screen and hides them once a key, a mouse or a gamepad is used. `on` and `off` decide for good | Warns, `auto` |
 | `net` | `trystero`, `local` | `trystero` | How the drivers of a shared day reach each other. `local` joins the tabs of one browser, with no network | Warns, `trystero` |
 | `room` | four letters | none | Opens the lobby and joins this room at once. See [Playing online](#playing-online) | Anything that is not a room code is ignored |
 | `relay` | `ws://` or `wss://` URLs, comma separated | none | Signaling relays to use in place of Trystero's public ones | An entry that is not such a URL is dropped, and with none left the public relays are used |

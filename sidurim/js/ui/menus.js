@@ -17,8 +17,6 @@
   var keyHandler = null;
   var startedOnce = false;
   var creditsOpen = false;
-  /** A real key has gone down on this page, so there is a keyboard, whatever the pointer says. */
-  var keySeen = false;
 
   var DIFFICULTIES = ['relaxed', 'normal'];
 
@@ -103,6 +101,8 @@
   /** A click starts the day the same way a key does, through input.js, so input stays the only path into the sim. */
   function pressEnter() {
     TLV.audio.unlock();
+    // A tap to start on a phone is the gesture a browser asks for before it gives up the whole screen.
+    if (u().touchMode() && u().touch && u().touch.fullscreen) u().touch.fullscreen();
     syntheticHeld = 1;
     syntheticPhase = sim && sim.game ? sim.game.phase : null;
     window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Enter', key: 'Enter', bubbles: true }));
@@ -139,18 +139,7 @@
     TLV.audio.ui('click');
   }
 
-  /**
-   * @returns {boolean} True on a device with nothing to drive with: a touch screen, no mouse or trackpad, no key pressed so far and no
-   * gamepad. A phone with a keyboard or pad paired loses the line as soon as either speaks.
-   */
-  function touchOnly() {
-    if (keySeen || !window.matchMedia || window.matchMedia('(any-pointer: fine)').matches) return false;
-    var touch = window.matchMedia('(any-pointer: coarse)').matches || window.navigator.maxTouchPoints > 0;
-    return touch && !u().padConnected();
-  }
-
   function keyDown(e) {
-    if (e.isTrusted) keySeen = true;
     if (!sim || !sim.game) return;
     var phase = sim.game.phase;
     if (creditsOpen) {
@@ -284,6 +273,10 @@
     dom.pauseLine = el('div', 'pause-line', panel);
     dom.pauseResume = button(panel, 'pause-resume', function () { u().togglePause(); });
     dom.pauseMute = button(panel, 'pause-mute', function () { u().toggleMute(); });
+    // N and B are the radio's keys. A phone has neither, so the pause screen has the button.
+    dom.pauseRadio = button(panel, 'pause-radio', function () {
+      if (TLV.audio.radioNext) TLV.audio.radioNext();
+    });
     dom.pauseCredits = button(panel, 'pause-credits', function () { setCredits(true); });
     dom.pauseControls = controlsLine(panel);
     dom.pauseOsm = el('div', 'osm', panel);
@@ -429,7 +422,9 @@
     u().setRich(dom.titleOnline, t('title.online'));
     u().setText(dom.titleTouch, t('title.touch'));
     u().setText(dom.titleOsm, TLV.ui.strings.OSM);
-    u().setRich(dom.langBtn, t('title.langKey') + ' ' + t('title.langName'));
+    var langKey = t('title.langKey');
+    u().setRich(dom.langBtn, (langKey ? langKey + ' ' : '') + t('title.langName'));
+    u().setText(dom.pauseRadio, t('touch.radio'));
     dom.diffOptions.forEach(function (opt) {
       u().setText(opt.title, t('diff.' + opt.name + '.name'));
       u().setText(opt.line, t('diff.' + opt.name + '.line'));
@@ -567,9 +562,11 @@
       u().setRich(dom.pauseMute, t(TLV.audio.isMuted() ? 'pause.soundOff' : 'pause.soundOn'));
       u().setRich(dom.pauseResume, t(u().padConnected() ? 'pause.resumePad' : 'pause.resume'));
     }
-    var touch = dom.title._shown === true && touchOnly();
+    // On a touch screen the title says where the stick and the buttons are, and to hold the phone sideways.
+    var touch = dom.title._shown === true && u().touchMode();
     u().show(dom.titleTouch, touch);
     dom.title.classList.toggle('touch-only', touch);
+    u().show(dom.pauseRadio, paused && u().touchMode());
     var lost = u().contextLost();
     u().show(dom.lost, !!lost);
     if (lost) {
