@@ -1685,7 +1685,11 @@ async function main() {
           'incident.telegraph': { id: 1, defId: 'TAILGATE', x: 1, y: 1 }, 'incident.end': { id: 1, defId: 'TAILGATE', outcome: 'AVOIDED' },
           'score.bonus': { id: 'AFTER_YOU', amount: 50, seconds: 5 }, 'score.chain': { n: 2, mult: 1.7, bank: 30 },
           'clock.warn': { level: 2 }, 'run.start': { seed: 1 }, 'run.end': { reason: 'WIN', money: 10, rank: 'NEW_DRIVER', stats: TLV.app.S.game.stats },
-          'bubble': { who: 'veh', id: 0, text: '!', ttl: 1 }
+          'bubble': { who: 'veh', id: 0, text: '!', ttl: 1 },
+          'versus.start': { round: 1, tasks: 10 }, 'versus.peer': { id: 'p2', joined: true }, 'versus.pick': { task: 0, defId: 'milk' },
+          'versus.done': { task: 0, defId: 'milk', by: 'p2', mine: false }, 'versus.taken': { task: 0, defId: 'milk', by: 'p2' },
+          'versus.unlock': { task: 9 }, 'versus.void': { task: 0, defId: 'milk' }, 'versus.ended': { id: 'p2', reason: 'CLOCK', money: 120 },
+          'versus.ready': { self: false }
         };
         const bad = [];
         Object.keys(TLV.ui.EVENTS).forEach((name) => {
